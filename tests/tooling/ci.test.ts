@@ -77,12 +77,12 @@ describe('Ubuntu 无人值守检查 CI', () => {
     }
   });
 
-  test('检查工作流只使用检出与 Node 设置 action，发布由独立手动工作流负责', () => {
+  test('检查工作流只使用检出与 Node 设置 action，发布由独立工作流负责', () => {
     const job = checkJob();
     expect(job.steps.flatMap((step) => step.uses ? [step.uses.split('@')[0]] : []))
       .toEqual(['actions/checkout', 'actions/setup-node']);
     expect(job.environment).toBeUndefined();
     const pages = parse(readFileSync('.github/workflows/pages.yml', 'utf8')) as { on: Record<string, unknown> };
-    expect(Object.keys(pages.on)).toEqual(['workflow_dispatch']);
+    expect(Object.keys(pages.on).sort()).toEqual(['push', 'workflow_dispatch']);
   });
 });

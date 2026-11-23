@@ -80,13 +80,14 @@ describe('English README contract', () => {
     expect(guide).toMatch(/\nBuilt with Claude Code & Codex\r?\n?$/);
   });
 
-  test('documents the optional public base example and manual GitHub Pages deployment', () => {
+  test('documents the optional public base example and guarded GitHub Pages deployment', () => {
     const guide = readme();
     expect(guide).toContain('[.env.example](.env.example)');
     const deployment = /^## Deploy to GitHub Pages\r?\n([\s\S]*?)(?=^## |$(?![\s\S]))/m.exec(guide)?.[1];
     expect(deployment).toBeDefined();
     for (const text of ['Settings', 'Pages', 'GitHub Actions', 'Run workflow',
-      '.github/workflows/pages.yml', 'GITHUB_REPOSITORY', 'dist/', 'built-in', 'token']) {
+      '.github/workflows/pages.yml', '/prs-please/', 'dist/', 'built-in', 'token',
+      'pushes to `main`', 'skip while the repository is private']) {
       expect(deployment).toContain(text);
     }
   });

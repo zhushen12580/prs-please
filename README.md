@@ -1,10 +1,29 @@
 # PRs, Please
 
-A single-player browser game about maintaining an open-source project. Review 30 fictional pull requests over five working days: read the description, diff, CI logs and supporting records, select evidence, then approve, request changes or reject. A shift takes about 15–25 minutes. The game interface and cases are in Simplified Chinese; the code examples use JavaScript/TypeScript.
+A browser game where you review 30 fictional PRs, catch hidden problems, and protect good contributions.
 
-Play requires no login or API key. The app runs entirely in the browser with no backend, remote model or runtime service. Case code is displayed as text and never executed. The source uses native TypeScript DOM components and Vite.
+English | [简体中文](README.zh-CN.md)
+
+![The review desk: PR materials and a code diff above approve, request changes and reject controls](docs/images/review-desk.png)
+
+[Browser demo on GitHub Pages](https://zhushen12580.github.io/prs-please/) — available after the repository is public and Pages is enabled.
+
+**Five days. Six PRs a day. Three possible verdicts.** Read the description, diff and CI logs, select evidence, then approve, request changes or reject. Catch nonexistent APIs, tests weakened to turn CI green, and backdoors disguised as fixes. A shift is designed for about 15–25 minutes, with no real-time countdown.
+
+**The game interface and cases are in Simplified Chinese.** Code examples use JavaScript/TypeScript. No login or API key is required.
+
+## Features
+
+- **Evidence-based reviews:** select code lines, CI logs, disclosure fields and tool records; each verdict gets an explanation.
+- **Rules that accumulate:** a new rule each day adds API checks, AI disclosure, test integrity and backdoor review to the initial CI requirement.
+- **Reproducible challenges:** the same seed and content version give the same case order; progress saves locally in your browser.
+- **A scorecard to share:** finish all 30 reviews, inspect the results and download a 1200×630 PNG.
+- **An editable JSON case library:** contribute an original case through the [contribution guide](CONTRIBUTING.md), without changing the game engine.
+- **Desktop, mobile and keyboard controls:** responsive layouts, selectable evidence and a rule manual you can open during a review.
 
 ## Run locally
+
+Quick start from a source checkout:
 
 1. Install **Node.js 24** and npm. Node 24 is also the version used by CI.
 2. Clone this repository using its repository page, then open a terminal in the cloned repository's root directory, alongside `package.json`. Run all commands below from that directory.
@@ -69,7 +88,13 @@ If storage is unavailable, **进度仅保留至本页关闭** warns that progres
 
 On the final results screen, click **下载成绩卡** (download scorecard). For the default seed, the download is `prs-please-maintainer-001.png`: a **1200×630 PNG** containing the project name, score, correct verdicts, error totals, seed and content version, with no personal information. Repeated or cancelled downloads do not change the results.
 
-All cases and answers ship in the client. This is a local game with no anti-cheat guarantee or server-verified scores.
+![Example scorecard from an all-correct acceptance-test run](docs/images/scorecard.png)
+
+## How it works
+
+The app uses native TypeScript DOM components and Vite. JSON files define the five-day campaign, rules and 30 fictional cases. Content validation checks their structure and evidence references; a seeded shuffle fixes each day's review order. A state machine handles submissions, feedback and summaries, while pure functions calculate scores from the review records.
+
+Everything runs in the browser: `localStorage` keeps one current shift, and Canvas draws the downloadable scorecard. Case code is displayed as text and never executed. There is no backend, remote model or runtime service. All cases and answers ship in the client; scores are local and have no anti-cheat guarantee or server verification.
 
 ## Check the project
 
@@ -137,17 +162,21 @@ The game changes screens inside the root HTML document without History API route
 
 ## Deploy to GitHub Pages
 
-The [Pages workflow](.github/workflows/pages.yml) runs only when manually triggered (`workflow_dispatch`). Once the workflow is available on the repository's default branch:
+The [Pages workflow](.github/workflows/pages.yml) runs on pushes to `main` and through `workflow_dispatch`. Both jobs skip while the repository is private. No public deployment has been verified yet.
 
-1. In the repository's **Settings → Pages → Build and deployment**, set **Source** to **GitHub Actions**.
-2. Open **Actions → Deploy to GitHub Pages → Run workflow**, select the default branch, then click **Run workflow**.
-3. Wait for the build and deployment jobs to succeed, then open the **github-pages** environment URL shown in the workflow run.
+Once the repository is public and the workflow is on `main`:
 
-The workflow installs locked dependencies with Node.js 24, runs unit/content tests, builds `dist/`, uploads the Pages artifact and deploys it. The build derives the public base from GitHub's built-in `GITHUB_REPOSITORY`, so this repository uses `/prs-please/` and a renamed repository uses its own name. It needs no Git remote lookup or personal access token; GitHub's built-in token and OIDC permissions handle the deployment. See [GitHub's custom Pages workflow guide](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages) for the hosting setup.
+1. In **Settings → Pages → Build and deployment**, set **Source** to **GitHub Actions**.
+2. Push a change to `main`, or open **Actions → Deploy to GitHub Pages → Run workflow** and select `main`.
+3. After the jobs succeed, open [https://zhushen12580.github.io/prs-please/](https://zhushen12580.github.io/prs-please/) or the **github-pages** environment URL in the workflow run.
 
-## Contribute and license
+The workflow uses Node.js 24, installs locked dependencies, builds `dist/`, uploads it and deploys it with GitHub's built-in token and OIDC permissions. The existing Vite base is `/prs-please/`, matching this repository's Pages sub-path. The separate [CI workflow](.github/workflows/ci.yml) runs unit and browser checks. No personal access token is required.
+
+## Contribute
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) (in Simplified Chinese) for the JSON schema, complete normal/problem examples, evidence writing, original-source requirements and validation commands. Content contributions replace a case of the same day and category, update the campaign mapping and content version, and preserve the 30-case distribution.
+
+## License
 
 Code and original case content are available under the [MIT license](LICENSE).
 
