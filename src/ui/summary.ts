@@ -3,7 +3,7 @@ import { workTime } from '../game/state';
 import type { GameContent, GameState } from '../game/types';
 import { createResultDetails } from './feedback';
 
-export function createDaySummary(state: GameState, content: GameContent): HTMLElement {
+export function createDaySummary(state: GameState, content: GameContent, onNextDay?: () => void): HTMLElement {
   const definition = content.campaign.days.find((entry) => entry.day === state.day);
   if (!definition) throw new Error(`缺少第 ${state.day} 天关卡`);
   const records = state.records.filter((record) => definition.caseIds.includes(record.caseId));
@@ -29,6 +29,14 @@ export function createDaySummary(state: GameState, content: GameContent): HTMLEl
     statistics.append(item);
   }
   section.append(statistics);
+  if (onNextDay) {
+    const next = document.createElement('button');
+    next.type = 'button';
+    next.className = 'primary-button';
+    next.textContent = '下一天';
+    next.addEventListener('click', onNextDay);
+    section.append(next);
+  }
   for (const record of records) {
     const reviewCase = content.cases.find((entry) => entry.id === record.caseId);
     if (!reviewCase) throw new Error(`缺少案例 ${record.caseId}`);

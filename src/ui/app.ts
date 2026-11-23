@@ -1,6 +1,6 @@
 import { campaign, cases, rules } from '../content/load';
 import { summarize } from '../game/score';
-import { canSubmit, createGame, currentCase, transition, workTime, type GameAction } from '../game/state';
+import { canAdvanceDay, canSubmit, createGame, currentCase, transition, workTime, type GameAction } from '../game/state';
 import type { GameState } from '../game/types';
 import { createBriefing } from './briefing';
 import { createDecision } from './decision';
@@ -57,7 +57,10 @@ export function mountApp(root: HTMLElement): void {
       return;
     }
     if (state.phase === 'daySummary') {
-      const summary = createDaySummary(state, content);
+      const day = state.day;
+      const summary = createDaySummary(state, content, canAdvanceDay(state, content) ? () => {
+        if (dispatch({ type: 'nextDay', day })) render();
+      } : undefined);
       view.replaceChildren(summary);
       summary.querySelector<HTMLHeadingElement>('h2')?.focus();
       return;

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { campaign, cases, rules } from '../../src/content/load';
+import { campaign, cases, getDayCases, rules } from '../../src/content/load';
 import { evidenceMatches, scoreDecision, summarize } from '../../src/game/score';
 import type { DecisionRecord, GameContent, ReviewCase } from '../../src/game/types';
 import { answerKey } from '../fixtures/answer-key';
@@ -24,7 +24,9 @@ describe('精确证据集合与判分', () => {
 
   test.each(cases.map((entry) => entry.id))('%s 正确裁决和人工证据得到 10 分', (id) => {
     const answer = answerKey[id];
-    expect(scoreDecision(reviewCase(id), rules, 1, record(id, answer.verdict, answer.evidenceSets[0] ?? [])))
+    const day = campaign.days.find((entry) => entry.caseIds.includes(id))?.day;
+    if (!day) throw new Error(`缺少案例归属 ${id}`);
+    expect(scoreDecision(reviewCase(id), rules, day, record(id, answer.verdict, answer.evidenceSets[0] ?? [])))
       .toMatchObject({ points: 10, verdictCorrect: true, evidenceCorrect: true, standardVerdict: answer.verdict });
   });
 
@@ -56,9 +58,9 @@ describe('精确证据集合与判分', () => {
 describe('统一统计口径', () => {
   test('空记录、第一天全对和全批准', () => {
     expect(summarize([], content)).toEqual({ points: 0, maxPoints: 0, reviewed: 0, correctVerdicts: 0, violationsMerged: 0, bugsMerged: 0, goodPrsHarmed: 0 });
-    const perfect = cases.map(({ id }) => record(id, answerKey[id].verdict, answerKey[id].evidenceSets[0] ?? []));
+    const perfect = getDayCases(1).map(({ id }) => record(id, answerKey[id].verdict, answerKey[id].evidenceSets[0] ?? []));
     expect(summarize(perfect, content)).toEqual({ points: 60, maxPoints: 60, reviewed: 6, correctVerdicts: 6, violationsMerged: 0, bugsMerged: 0, goodPrsHarmed: 0 });
-    expect(summarize(cases.map(({ id }) => record(id, 'approve')), content))
+    expect(summarize(getDayCases(1).map(({ id }) => record(id, 'approve')), content))
       .toEqual({ points: 30, maxPoints: 60, reviewed: 6, correctVerdicts: 3, violationsMerged: 3, bugsMerged: 3, goodPrsHarmed: 0 });
   });
 

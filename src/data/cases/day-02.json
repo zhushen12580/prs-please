@@ -1,0 +1,1010 @@
+[
+  {
+    "id": "d2-01",
+    "title": "按笔记 ID 正确失效标题缓存",
+    "description": {
+      "summary": "虚构项目「笺桥」用笔记 ID 作为 Map 缓存键。重命名写入存储后，旧代码却按新标题删除缓存，导致再次读取同一 ID 仍看到旧标题。本次按 ID 失效，保留其他笔记的缓存；附带回归测试覆盖重读与未改笔记。",
+      "disclosure": {
+        "id": "disclosure",
+        "text": "未使用 AI 辅助；手工编写并检查本次改动。"
+      }
+    },
+    "contributor": {
+      "name": "林禾（虚构）",
+      "handle": "note-bridge-fictional",
+      "toolRecords": [
+        {
+          "id": "tool-edit",
+          "text": "虚构投稿工具记录：修复重命名后的缓存键，补充两个笔记的回归断言。"
+        }
+      ]
+    },
+    "ci": {
+      "status": "passed",
+      "logs": [
+        {
+          "id": "ci-cache",
+          "text": "PASS rename-note.test.ts：重命名后重读得到新标题，其他笔记仍可读取；全部回归测试与类型检查通过。"
+        }
+      ]
+    },
+    "files": [
+      {
+        "path": "src/rename-note.ts",
+        "lines": [
+          {
+            "id": "cache-import",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "import { store, cachedTitles } from './note-store';"
+          },
+          {
+            "id": "cache-contract",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "// cachedTitles: Map<string, string>，键是笔记 ID；store 成功写入后再失效。"
+          },
+          {
+            "id": "cache-function",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "export async function renameNote("
+          },
+          {
+            "id": "cache-id",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "  id: string,"
+          },
+          {
+            "id": "cache-title",
+            "kind": "context",
+            "oldLine": 5,
+            "newLine": 5,
+            "text": "  title: string,"
+          },
+          {
+            "id": "cache-open",
+            "kind": "context",
+            "oldLine": 6,
+            "newLine": 6,
+            "text": "): Promise<void> {"
+          },
+          {
+            "id": "cache-save",
+            "kind": "context",
+            "oldLine": 7,
+            "newLine": 7,
+            "text": "  await store.rename(id, title);"
+          },
+          {
+            "id": "cache-old-key",
+            "kind": "delete",
+            "oldLine": 8,
+            "newLine": null,
+            "text": "  cachedTitles.delete(title);"
+          },
+          {
+            "id": "cache-fixed-key",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 8,
+            "text": "  cachedTitles.delete(id);"
+          },
+          {
+            "id": "cache-close",
+            "kind": "context",
+            "oldLine": 9,
+            "newLine": 9,
+            "text": "}"
+          }
+        ]
+      },
+      {
+        "path": "tests/rename-note.test.ts",
+        "lines": [
+          {
+            "id": "cache-test-import",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "import { expect, test } from 'vitest';"
+          },
+          {
+            "id": "cache-test-subject",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "import { renameNote } from '../src/rename-note';"
+          },
+          {
+            "id": "cache-test-fixture",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "import { resetNotes, readTitle } from './note-fixture';"
+          },
+          {
+            "id": "cache-test-open",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 4,
+            "text": "test('重命名后失效且不影响其他笔记', async () => {"
+          },
+          {
+            "id": "cache-test-setup",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 5,
+            "text": "  resetNotes({ n1: '旧标题', n2: '另一篇' });"
+          },
+          {
+            "id": "cache-test-prime",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 6,
+            "text": "  await readTitle('n1'); await readTitle('n2');"
+          },
+          {
+            "id": "cache-test-act",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 7,
+            "text": "  await renameNote('n1', '新标题');"
+          },
+          {
+            "id": "cache-test-new",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 8,
+            "text": "  expect(await readTitle('n1')).toBe('新标题');"
+          },
+          {
+            "id": "cache-test-other",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 9,
+            "text": "  expect(await readTitle('n2')).toBe('另一篇');"
+          },
+          {
+            "id": "cache-test-close",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 10,
+            "text": "});"
+          }
+        ]
+      }
+    ],
+    "finding": null,
+    "sources": [
+      {
+        "url": "https://curl.se/dev/contribute.html",
+        "theme": "评审贡献时核对改动与验证材料",
+        "note": "借鉴贡献评审中检查代码与测试材料的主题；项目、API、人物、补丁及日志均为原创虚构。本游戏规则是虚构项目规则，不冒充 curl 的完整政策。"
+      }
+    ],
+    "approvalExplanation": "CI 通过，满足 R1。缓存约定明确使用笔记 ID 作键，改动在存储成功后按同一 ID 删除，下一次读取会重新加载标题。新增用例确实先预热缓存再重命名，也检查另一篇笔记；没有 API 误用，满足 R2，可以批准。"
+  },
+  {
+    "id": "d2-02",
+    "title": "正确使用游标 API 加载下一页",
+    "description": {
+      "summary": "虚构项目「微架目录」每次滚动加载两项。旧代码忽略调用方传入的游标，反复请求第一页。补丁把游标放进 after 参数，并等待异步结果后返回项目与下一游标。请对照本地 API 说明和第二页回归测试。",
+      "disclosure": {
+        "id": "disclosure",
+        "text": "未使用 AI 辅助；手工编写并检查本次改动。"
+      }
+    },
+    "contributor": {
+      "name": "周砚（虚构）",
+      "handle": "small-shelf-fictional",
+      "toolRecords": [
+        {
+          "id": "tool-edit",
+          "text": "虚构投稿工具记录：将调用方游标传给 catalog.scan，保留 await 并新增第二页用例。"
+        }
+      ]
+    },
+    "ci": {
+      "status": "passed",
+      "logs": [
+        {
+          "id": "ci-cursor",
+          "text": "PASS load-following-page.test.ts：游标 c2 返回第三、四项及 nextCursor=null；类型检查和原有首页用例通过。"
+        }
+      ]
+    },
+    "files": [
+      {
+        "path": "src/load-following-page.ts",
+        "lines": [
+          {
+            "id": "cursor-import",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "import { catalog } from './catalog';"
+          },
+          {
+            "id": "cursor-function",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "export async function loadFollowingPage("
+          },
+          {
+            "id": "cursor-parameter",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "  cursor: string | null,"
+          },
+          {
+            "id": "cursor-open",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": ") {"
+          },
+          {
+            "id": "cursor-old-call",
+            "kind": "delete",
+            "oldLine": 5,
+            "newLine": null,
+            "text": "  const page = await catalog.scan({ limit: 2 });"
+          },
+          {
+            "id": "cursor-correct-call",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 5,
+            "text": "  const page = await catalog.scan({ after: cursor, limit: 2 });"
+          },
+          {
+            "id": "cursor-result",
+            "kind": "context",
+            "oldLine": 6,
+            "newLine": 6,
+            "text": "  return {"
+          },
+          {
+            "id": "cursor-items",
+            "kind": "context",
+            "oldLine": 7,
+            "newLine": 7,
+            "text": "    items: page.items,"
+          },
+          {
+            "id": "cursor-next",
+            "kind": "context",
+            "oldLine": 8,
+            "newLine": 8,
+            "text": "    nextCursor: page.nextCursor,"
+          },
+          {
+            "id": "cursor-object-close",
+            "kind": "context",
+            "oldLine": 9,
+            "newLine": 9,
+            "text": "  };"
+          },
+          {
+            "id": "cursor-close",
+            "kind": "context",
+            "oldLine": 10,
+            "newLine": 10,
+            "text": "}"
+          }
+        ]
+      },
+      {
+        "path": "tests/load-following-page.test.ts",
+        "lines": [
+          {
+            "id": "cursor-test-import",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "import { expect, test } from 'vitest';"
+          },
+          {
+            "id": "cursor-test-subject",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "import { loadFollowingPage } from '../src/load-following-page';"
+          },
+          {
+            "id": "cursor-test-fixture",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "import { resetCatalog } from './catalog-fixture';"
+          },
+          {
+            "id": "cursor-test-open",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 4,
+            "text": "test('使用第二页游标', async () => {"
+          },
+          {
+            "id": "cursor-test-setup",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 5,
+            "text": "  resetCatalog(['A', 'B', 'C', 'D']);"
+          },
+          {
+            "id": "cursor-test-call",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 6,
+            "text": "  const page = await loadFollowingPage('c2');"
+          },
+          {
+            "id": "cursor-test-items",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 7,
+            "text": "  expect(page.items).toEqual(['C', 'D']);"
+          },
+          {
+            "id": "cursor-test-end",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 8,
+            "text": "  expect(page.nextCursor).toBeNull();"
+          },
+          {
+            "id": "cursor-test-close",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 9,
+            "text": "});"
+          }
+        ]
+      }
+    ],
+    "finding": null,
+    "sources": [
+      {
+        "url": "https://curl.se/dev/contribute.html",
+        "theme": "评审贡献时核对改动与验证材料",
+        "note": "借鉴贡献评审中检查代码与测试材料的主题；项目、API、人物、补丁及日志均为原创虚构。本游戏规则是虚构项目规则，不冒充 curl 的完整政策。"
+      }
+    ],
+    "apiReference": [
+      {
+        "name": "catalog.scan",
+        "signature": "catalog.scan(options: { after?: string | null; limit: number }): Promise<{ items: string[]; nextCursor: string | null }>",
+        "notes": "虚构项目的完整分页接口：after 为上次结果的 nextCursor，省略或为 null 时从第一页开始；limit 为正整数。返回 Promise，必须 await 后读取 items 与 nextCursor。顺序稳定，末页 nextCursor 为 null；测试夹具中四项 A/B/C/D 的第二页游标为 c2。"
+      }
+    ],
+    "approvalExplanation": "R1 的检查通过。API 签名接收包含 after 的选项对象并返回 Promise；补丁正确传入 cursor，await 后再读取 items 与 nextCursor。第二页测试核对 C、D 和末页 null，满足 R2，可以批准。"
+  },
+  {
+    "id": "d2-03",
+    "title": "路径整理调用了不存在的方法",
+    "description": {
+      "summary": "虚构项目「路径匣」只处理内存中的工作区相对路径，不读取真实文件系统。本次希望把重复分隔符折叠，但将原有的合法 normalize 调用换成 canonicalize。CI 目前仅检查路径面板能挂载，没有执行这个提交按钮分支；请核对随附的完整 paths 接口。",
+      "disclosure": {
+        "id": "disclosure",
+        "text": "未使用 AI 辅助；手工编写并检查本次改动。"
+      }
+    },
+    "contributor": {
+      "name": "许棠（虚构）",
+      "handle": "path-box-fictional",
+      "toolRecords": [
+        {
+          "id": "tool-edit",
+          "text": "虚构投稿工具记录：手工替换路径整理方法名，上传现有面板冒烟测试结果。"
+        }
+      ]
+    },
+    "ci": {
+      "status": "passed",
+      "logs": [
+        {
+          "id": "ci-path",
+          "text": "PASS 面板挂载与静态资源检查；当前冒烟测试未触发路径提交分支，JavaScript 文件未做类型检查。"
+        }
+      ]
+    },
+    "files": [
+      {
+        "path": "src/submit-path.js",
+        "lines": [
+          {
+            "id": "path-import",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "import { workspace } from './workspace.js';"
+          },
+          {
+            "id": "path-ui-import",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "import { showPath } from './path-panel.js';"
+          },
+          {
+            "id": "path-contract",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "// 输入为工作区相对路径；只整理文本，不访问磁盘。"
+          },
+          {
+            "id": "path-function",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "export function submitPath(input) {"
+          },
+          {
+            "id": "path-trim",
+            "kind": "context",
+            "oldLine": 5,
+            "newLine": 5,
+            "text": "  input = input.trim();"
+          },
+          {
+            "id": "path-empty",
+            "kind": "context",
+            "oldLine": 6,
+            "newLine": 6,
+            "text": "  if (!input) return '';"
+          },
+          {
+            "id": "path-old-call",
+            "kind": "delete",
+            "oldLine": 7,
+            "newLine": null,
+            "text": "  const clean = workspace.paths.normalize(input);"
+          },
+          {
+            "id": "path-invented-call",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 7,
+            "text": "  const clean = workspace.paths.canonicalize(input);"
+          },
+          {
+            "id": "path-display",
+            "kind": "context",
+            "oldLine": 8,
+            "newLine": 8,
+            "text": "  showPath(clean);"
+          },
+          {
+            "id": "path-return",
+            "kind": "context",
+            "oldLine": 9,
+            "newLine": 9,
+            "text": "  return clean;"
+          },
+          {
+            "id": "path-close",
+            "kind": "context",
+            "oldLine": 10,
+            "newLine": 10,
+            "text": "}"
+          },
+          {
+            "id": "path-blank",
+            "kind": "context",
+            "oldLine": 11,
+            "newLine": 11,
+            "text": ""
+          },
+          {
+            "id": "path-example",
+            "kind": "context",
+            "oldLine": 12,
+            "newLine": 12,
+            "text": "// submitPath('docs//guide') 应显示 docs/guide。"
+          }
+        ]
+      }
+    ],
+    "finding": {
+      "ruleId": "R2",
+      "impact": "bug",
+      "evidenceSets": [
+        [
+          "path-invented-call"
+        ]
+      ],
+      "explanation": "随附完整 paths 接口明确不存在 canonicalize。新增行调用它会在提交路径时抛出 TypeError；绿色 CI 只覆盖挂载，不足以证明这条调用合法。该行单独足以定位 R2 的 API 问题，应要求修改为已有方法，不是直接拒绝。"
+    },
+    "sources": [
+      {
+        "url": "https://curl.se/dev/contribute.html",
+        "theme": "评审贡献时核对改动与验证材料",
+        "note": "借鉴贡献评审中检查代码与测试材料的主题；项目、API、人物、补丁及日志均为原创虚构。本游戏规则是虚构项目规则，不冒充 curl 的完整政策。"
+      }
+    ],
+    "apiReference": [
+      {
+        "name": "workspace.paths（完整接口）",
+        "signature": "workspace.paths.normalize(input: string): string; workspace.paths.join(parts: string[]): string",
+        "notes": "虚构工作区 paths 对象只提供 normalize 与 join，不存在 canonicalize，也没有动态扩展方法。normalize 折叠重复的 / 并去掉 ./；join 用 / 连接片段后执行同样整理。二者都同步返回字符串，不访问磁盘或解析符号链接。"
+      }
+    ]
+  },
+  {
+    "id": "d2-04",
+    "title": "读取清单标题时错用异步返回值",
+    "description": {
+      "summary": "虚构项目「包签」让清单服务改为异步读取。本次为缩短标题加载函数，去掉了 await，却仍直接访问 title。该文件为 JavaScript，现有 CI 只测固定的占位标题渲染，没有调用实际清单读取函数；返回值语义以随附 API 为准。",
+      "disclosure": {
+        "id": "disclosure",
+        "text": "未使用 AI 辅助；手工编写并检查本次改动。"
+      }
+    },
+    "contributor": {
+      "name": "唐溪（虚构）",
+      "handle": "package-label-fictional",
+      "toolRecords": [
+        {
+          "id": "tool-edit",
+          "text": "虚构投稿工具记录：手工精简读取表达式，保留原有占位标题的界面测试。"
+        }
+      ]
+    },
+    "ci": {
+      "status": "passed",
+      "logs": [
+        {
+          "id": "ci-manifest",
+          "text": "PASS 占位标题渲染与打包；未调用 loadManifestTitle，未对 JavaScript 文件执行类型检查。"
+        }
+      ]
+    },
+    "files": [
+      {
+        "path": "src/load-manifest-title.js",
+        "lines": [
+          {
+            "id": "manifest-import",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "import { registry } from './registry.js';"
+          },
+          {
+            "id": "manifest-constant",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "export const placeholderTitle = '正在加载';"
+          },
+          {
+            "id": "manifest-blank",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": ""
+          },
+          {
+            "id": "manifest-function",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "export async function loadManifestTitle(id) {"
+          },
+          {
+            "id": "manifest-empty",
+            "kind": "context",
+            "oldLine": 5,
+            "newLine": 5,
+            "text": "  if (!id) return '';"
+          },
+          {
+            "id": "manifest-old-read",
+            "kind": "delete",
+            "oldLine": 6,
+            "newLine": null,
+            "text": "  const manifest = await registry.readManifest(id);"
+          },
+          {
+            "id": "manifest-old-title",
+            "kind": "delete",
+            "oldLine": 7,
+            "newLine": null,
+            "text": "  return manifest.title;"
+          },
+          {
+            "id": "manifest-unawaited",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 6,
+            "text": "  return registry.readManifest(id).title;"
+          },
+          {
+            "id": "manifest-close",
+            "kind": "context",
+            "oldLine": 8,
+            "newLine": 7,
+            "text": "}"
+          },
+          {
+            "id": "manifest-blank-two",
+            "kind": "context",
+            "oldLine": 9,
+            "newLine": 8,
+            "text": ""
+          },
+          {
+            "id": "manifest-preview",
+            "kind": "context",
+            "oldLine": 10,
+            "newLine": 9,
+            "text": "export function previewTitle(title) {"
+          },
+          {
+            "id": "manifest-preview-return",
+            "kind": "context",
+            "oldLine": 11,
+            "newLine": 10,
+            "text": "  return title || '无标题';"
+          },
+          {
+            "id": "manifest-preview-close",
+            "kind": "context",
+            "oldLine": 12,
+            "newLine": 11,
+            "text": "}"
+          }
+        ]
+      }
+    ],
+    "finding": {
+      "ruleId": "R2",
+      "impact": "bug",
+      "evidenceSets": [
+        [
+          "manifest-unawaited"
+        ]
+      ],
+      "explanation": "新增行在 Promise 上读取 title，得到 undefined，而不是清单标题。外层 async 不会把这次属性访问变成等待；需要先 await registry.readManifest(id) 再取字段。CI 未覆盖读取分支且未检查 JS 类型，仍满足 R1；唯一决定性问题是 R2，应要求修改。"
+    },
+    "sources": [
+      {
+        "url": "https://curl.se/dev/contribute.html",
+        "theme": "评审贡献时核对改动与验证材料",
+        "note": "借鉴贡献评审中检查代码与测试材料的主题；项目、API、人物、补丁及日志均为原创虚构。本游戏规则是虚构项目规则，不冒充 curl 的完整政策。"
+      }
+    ],
+    "apiReference": [
+      {
+        "name": "registry.readManifest",
+        "signature": "registry.readManifest(id: string): Promise<Manifest>; type Manifest = { title: string; version: string }",
+        "notes": "虚构清单服务返回真正的 Promise<Manifest>，Promise 本身没有 title 字段。必须先 await 得到 Manifest 再读取 title。合法非空 ID 总能查到清单；即使外层函数是 async，也不会自动等待属性访问左侧的 Promise。"
+      }
+    ]
+  },
+  {
+    "id": "d2-05",
+    "title": "待处理任务筛选错解状态参数",
+    "description": {
+      "summary": "虚构项目「排队钟」需要显示尚未开始的任务数量。贡献者把 queued 改为界面文案中常见的 pending，但服务参数使用固定状态枚举。现有 CI 使用空任务列表做页面冒烟测试，不能区分筛选条件；完整状态与未知值行为已随附。",
+      "disclosure": {
+        "id": "disclosure",
+        "text": "未使用 AI 辅助；手工编写并检查本次改动。"
+      }
+    },
+    "contributor": {
+      "name": "沈遥（虚构）",
+      "handle": "queue-clock-fictional",
+      "toolRecords": [
+        {
+          "id": "tool-edit",
+          "text": "虚构投稿工具记录：手工调整待处理状态值，使用空队列页面冒烟检查。"
+        }
+      ]
+    },
+    "ci": {
+      "status": "passed",
+      "logs": [
+        {
+          "id": "ci-status",
+          "text": "PASS 空列表页面、样式和构建；没有带任务数据的状态筛选测试，JavaScript 参数未做类型检查。"
+        }
+      ]
+    },
+    "files": [
+      {
+        "path": "src/waiting-count.js",
+        "lines": [
+          {
+            "id": "status-import",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "import { jobs } from './jobs.js';"
+          },
+          {
+            "id": "status-contract",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "// 待处理计数仅包含尚未开始的任务。"
+          },
+          {
+            "id": "status-function",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "export function waitingCount() {"
+          },
+          {
+            "id": "status-old-filter",
+            "kind": "delete",
+            "oldLine": 4,
+            "newLine": null,
+            "text": "  const waiting = jobs.query({ status: 'queued' });"
+          },
+          {
+            "id": "status-invalid-filter",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 4,
+            "text": "  const waiting = jobs.query({ status: 'pending' });"
+          },
+          {
+            "id": "status-count",
+            "kind": "context",
+            "oldLine": 5,
+            "newLine": 5,
+            "text": "  return waiting.length;"
+          },
+          {
+            "id": "status-close",
+            "kind": "context",
+            "oldLine": 6,
+            "newLine": 6,
+            "text": "}"
+          },
+          {
+            "id": "status-blank",
+            "kind": "context",
+            "oldLine": 7,
+            "newLine": 7,
+            "text": ""
+          },
+          {
+            "id": "status-label-function",
+            "kind": "context",
+            "oldLine": 8,
+            "newLine": 8,
+            "text": "export function countLabel(count) {"
+          },
+          {
+            "id": "status-zero",
+            "kind": "context",
+            "oldLine": 9,
+            "newLine": 9,
+            "text": "  if (count === 0) return '暂无待处理任务';"
+          },
+          {
+            "id": "status-label",
+            "kind": "context",
+            "oldLine": 10,
+            "newLine": 10,
+            "text": "  return `待处理：${count}`;"
+          },
+          {
+            "id": "status-label-close",
+            "kind": "context",
+            "oldLine": 11,
+            "newLine": 11,
+            "text": "}"
+          }
+        ]
+      }
+    ],
+    "finding": {
+      "ruleId": "R2",
+      "impact": "bug",
+      "evidenceSets": [
+        [
+          "status-invalid-filter"
+        ]
+      ],
+      "explanation": "随附说明规定尚未开始的状态是 queued，pending 不属于枚举，也不是别名。新增行会把有排队任务的列表查成空数组，错误显示零待处理。空列表冒烟 CI 通过不等于参数有效；这一行证明 R2 违规，应要求修改。"
+    },
+    "sources": [
+      {
+        "url": "https://curl.se/dev/contribute.html",
+        "theme": "评审贡献时核对改动与验证材料",
+        "note": "借鉴贡献评审中检查代码与测试材料的主题；项目、API、人物、补丁及日志均为原创虚构。本游戏规则是虚构项目规则，不冒充 curl 的完整政策。"
+      }
+    ],
+    "apiReference": [
+      {
+        "name": "jobs.query",
+        "signature": "jobs.query(options: { status?: JobStatus }): Job[]; type JobStatus = 'queued' | 'running' | 'done'",
+        "notes": "虚构服务中 queued 表示尚未开始，running 表示执行中，done 表示已完成。status 按枚举值精确匹配；省略时返回所有任务。pending 不是合法状态，传入此值返回空数组，不会映射成 queued。接口同步返回数组。"
+      }
+    ]
+  },
+  {
+    "id": "d2-06",
+    "title": "重试循环多执行一次导致 CI 失败",
+    "description": {
+      "summary": "虚构项目「信号邮差」的 maxAttempts 指总尝试次数，包含第一次发送。补丁把小于改为小于等于，声称确保最后一次重试，但让上限 3 变成实际 4 次。回归作业已明确报告失败；重试耗尽后仍应抛出最后错误。",
+      "disclosure": {
+        "id": "disclosure",
+        "text": "未使用 AI 辅助；手工编写并检查本次改动。"
+      }
+    },
+    "contributor": {
+      "name": "陆简（虚构）",
+      "handle": "signal-courier-fictional",
+      "toolRecords": [
+        {
+          "id": "tool-edit",
+          "text": "虚构投稿工具记录：手工调整重试边界，保留原有尝试上限回归测试并上传失败日志。"
+        }
+      ]
+    },
+    "ci": {
+      "status": "failed",
+      "logs": [
+        {
+          "id": "ci-retry-start",
+          "text": "RUN retry.test.ts：send 总是失败，maxAttempts=3；上限包含首次调用。"
+        },
+        {
+          "id": "ci-retry-failure",
+          "text": "FAIL retry.test.ts / 遵守尝试上限：期望 3 次，实际 4 次；全部检查退出码 1。"
+        }
+      ]
+    },
+    "files": [
+      {
+        "path": "src/retry.ts",
+        "lines": [
+          {
+            "id": "retry-contract",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "// maxAttempts 为正整数，表示包含首次发送的总尝试上限。"
+          },
+          {
+            "id": "retry-function",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "export async function retry<T>("
+          },
+          {
+            "id": "retry-send",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "  send: () => Promise<T>,"
+          },
+          {
+            "id": "retry-limit",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "  maxAttempts: number,"
+          },
+          {
+            "id": "retry-open",
+            "kind": "context",
+            "oldLine": 5,
+            "newLine": 5,
+            "text": "): Promise<T> {"
+          },
+          {
+            "id": "retry-error",
+            "kind": "context",
+            "oldLine": 6,
+            "newLine": 6,
+            "text": "  let lastError: unknown;"
+          },
+          {
+            "id": "retry-old-loop",
+            "kind": "delete",
+            "oldLine": 7,
+            "newLine": null,
+            "text": "  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {"
+          },
+          {
+            "id": "retry-extra-attempt",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 7,
+            "text": "  for (let attempt = 0; attempt <= maxAttempts; attempt += 1) {"
+          },
+          {
+            "id": "retry-try",
+            "kind": "context",
+            "oldLine": 8,
+            "newLine": 8,
+            "text": "    try {"
+          },
+          {
+            "id": "retry-return",
+            "kind": "context",
+            "oldLine": 9,
+            "newLine": 9,
+            "text": "      return await send();"
+          },
+          {
+            "id": "retry-catch",
+            "kind": "context",
+            "oldLine": 10,
+            "newLine": 10,
+            "text": "    } catch (error) {"
+          },
+          {
+            "id": "retry-save-error",
+            "kind": "context",
+            "oldLine": 11,
+            "newLine": 11,
+            "text": "      lastError = error;"
+          },
+          {
+            "id": "retry-catch-close",
+            "kind": "context",
+            "oldLine": 12,
+            "newLine": 12,
+            "text": "    }"
+          },
+          {
+            "id": "retry-loop-close",
+            "kind": "context",
+            "oldLine": 13,
+            "newLine": 13,
+            "text": "  }"
+          },
+          {
+            "id": "retry-throw",
+            "kind": "context",
+            "oldLine": 14,
+            "newLine": 14,
+            "text": "  throw lastError;"
+          },
+          {
+            "id": "retry-close",
+            "kind": "context",
+            "oldLine": 15,
+            "newLine": 15,
+            "text": "}"
+          }
+        ]
+      }
+    ],
+    "finding": {
+      "ruleId": "R1",
+      "impact": "bug",
+      "evidenceSets": [
+        [
+          "ci-retry-failure"
+        ]
+      ],
+      "explanation": "CI 日志明确报告尝试上限回归失败，期望 3 次却调用 4 次，违反仍在生效的 R1。diff 的 <= 解释了多一次的原因；这是本地循环边界错误，没有误用项目 API。应要求修改并重新运行 CI，不能因第二天新增 R2 就忽略 R1。"
+    },
+    "sources": [
+      {
+        "url": "https://curl.se/dev/contribute.html",
+        "theme": "评审贡献时核对改动与验证材料",
+        "note": "借鉴贡献评审中检查代码与测试材料的主题；项目、API、人物、补丁及日志均为原创虚构。本游戏规则是虚构项目规则，不冒充 curl 的完整政策。"
+      }
+    ]
+  }
+]

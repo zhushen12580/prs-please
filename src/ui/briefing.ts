@@ -17,7 +17,9 @@ export function createBriefing(seed: string, day: number, rule: BriefingRule): H
   seedLabel.append('挑战种子：', seedValue);
 
   const note = document.createElement('p');
-  note.textContent = '今日新增一条规则。先阅读规则，再核对 PR 材料中的证据。';
+  note.textContent = day === 1
+    ? '今日新增一条规则。先阅读规则，再核对 PR 材料中的证据。'
+    : `今日新增一条规则，之前的规则继续生效（${Array.from({ length: day - 1 }, (_, index) => `R${index + 1}`).join('、')}）。先阅读规则，再核对 PR 材料中的证据。`;
 
   const ruleCard = document.createElement('article');
   ruleCard.className = 'rule-card';

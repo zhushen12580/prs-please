@@ -1,11 +1,12 @@
 import { describe, expect, test } from 'vitest';
-import { campaign, cases, getDayCases, rules } from '../../src/content/load';
+import { campaign, cases as loadedCases, getDayCases, rules } from '../../src/content/load';
 import { answerKey } from '../fixtures/answer-key';
 
 const dayOneIds = ['d1-01', 'd1-02', 'd1-03', 'd1-04', 'd1-05', 'd1-06'];
+const cases = getDayCases(1);
 
 describe('第一天真实内容', () => {
-  test('最终映射是五天三十个 ID，增量加载只有第一天六个真实案例', () => {
+  test('最终映射是五天三十个 ID，第一天集合保持六个真实案例', () => {
     expect(campaign).toEqual({
       contentVersion: '1.0.0',
       days: [
@@ -17,13 +18,12 @@ describe('第一天真实内容', () => {
       ],
     });
     expect(cases.map((item) => item.id)).toEqual(dayOneIds);
-    expect(getDayCases(1)).toEqual(cases);
-    expect(() => getDayCases(2)).toThrow(/尚未加载/);
+    expect(loadedCases.filter((item) => dayOneIds.includes(item.id))).toEqual(cases);
     expect(() => getDayCases(0)).toThrow(/不存在/);
   });
 
   test('三个正常、三个 R1/bug；人工答案独立锁定裁决与充分证据', () => {
-    expect(Object.keys(answerKey)).toEqual(dayOneIds);
+    expect(Object.keys(answerKey).filter((id) => id.startsWith('d1-'))).toEqual(dayOneIds);
     expect(cases.filter((item) => item.finding === null)).toHaveLength(3);
     for (const item of cases) {
       const expected = answerKey[item.id];

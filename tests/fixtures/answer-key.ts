@@ -13,4 +13,10 @@ export const answerKey: Record<string, ExpectedAnswer> = {
   'd1-04': { verdict: 'request_changes', evidenceSets: [['ci-timezone-failure']] },
   'd1-05': { verdict: 'request_changes', evidenceSets: [['ci-type-failure']] },
   'd1-06': { verdict: 'request_changes', evidenceSets: [['ci-empty-failure']] },
+  'd2-01': { verdict: 'approve', evidenceSets: [] },
+  'd2-02': { verdict: 'approve', evidenceSets: [] },
+  'd2-03': { verdict: 'request_changes', evidenceSets: [['path-invented-call']] },
+  'd2-04': { verdict: 'request_changes', evidenceSets: [['manifest-unawaited']] },
+  'd2-05': { verdict: 'request_changes', evidenceSets: [['status-invalid-filter']] },
+  'd2-06': { verdict: 'request_changes', evidenceSets: [['ci-retry-failure']] },
 };

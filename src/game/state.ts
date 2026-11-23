@@ -6,7 +6,8 @@ export type GameAction =
   | { type: 'selectVerdict'; verdict: Verdict }
   | { type: 'selectEvidence'; evidenceIds: readonly string[] }
   | { type: 'submit'; caseId: string }
-  | { type: 'next'; caseId: string };
+  | { type: 'next'; caseId: string }
+  | { type: 'nextDay'; day: number };
 
 function dayDefinition(state: GameState, content: GameContent) {
   const day = content.campaign.days.find((entry) => entry.day === state.day);
@@ -56,7 +57,21 @@ export function canSubmit(state: GameState, content: GameContent): boolean {
     && (state.draft.verdict === 'approve' || state.draft.evidenceIds.length > 0);
 }
 
+export function canAdvanceDay(state: GameState, content: GameContent): boolean {
+  if (state.phase !== 'daySummary') return false;
+  const completed = new Set(state.records.map((record) => record.caseId));
+  if (!dayDefinition(state, content).caseIds.every((id) => completed.has(id))) return false;
+  const nextDay = content.campaign.days.find((entry) => entry.day === state.day + 1);
+  const available = new Set(content.cases.map((entry) => entry.id));
+  return nextDay !== undefined && nextDay.caseIds.every((id) => available.has(id));
+}
+
 export function transition(state: GameState, action: GameAction, content: GameContent): GameState {
+  if (action.type === 'nextDay') {
+    if (action.day !== state.day || !canAdvanceDay(state, content)) return state;
+    return { ...state, day: state.day + 1, phase: 'briefing', position: 0,
+      draft: { verdict: null, evidenceIds: [] } };
+  }
   if (action.type === 'startReview') {
     return state.phase === 'briefing' ? { ...state, phase: 'review' } : state;
   }

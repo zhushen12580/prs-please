@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { campaign, cases, rules } from '../../src/content/load';
-import { canSubmit, createGame, currentCase, transition, workTime } from '../../src/game/state';
+import { canAdvanceDay, canSubmit, createGame, currentCase, transition, workTime } from '../../src/game/state';
 import { summarize } from '../../src/game/score';
 import type { GameState, Verdict } from '../../src/game/types';
 import { answerKey } from '../fixtures/answer-key';
@@ -92,5 +92,63 @@ describe('第一天纯状态机', () => {
     expect(act(state, { type: 'next', caseId: 'd1-01' })).toBe(state);
     expect(act(state, { type: 'submit', caseId: 'd1-01' })).toBe(state);
     expect(act(state, { type: 'startReview' })).toBe(state);
+  });
+});
+
+describe('第二天跨日状态机', () => {
+  function finishDay(initial: GameState, ids: readonly string[]): GameState {
+    let state = initial;
+    for (const id of ids) {
+      expect(currentCase(state, content).id).toBe(id);
+      state = act(state, { type: 'selectVerdict', verdict: answerKey[id].verdict });
+      state = act(state, { type: 'selectEvidence', evidenceIds: answerKey[id].evidenceSets[0] ?? [] });
+      state = act(state, { type: 'submit', caseId: id });
+      state = act(state, { type: 'next', caseId: id });
+    }
+    expect(state.phase).toBe('daySummary');
+    return state;
+  }
+
+  test('日结才能跨日，重置时钟和草稿，保留第一天的六条记录与 60 分', () => {
+    const initial = createGame('maintainer-001', content);
+    expect(canAdvanceDay(initial, content)).toBe(false);
+    expect(act(initial, { type: 'nextDay', day: 1 })).toBe(initial);
+    const review = start();
+    expect(act(review, { type: 'nextDay', day: 1 })).toBe(review);
+    const feedback = act(act(review, { type: 'selectVerdict', verdict: 'approve' }), { type: 'submit', caseId: 'd1-02' });
+    expect(act(feedback, { type: 'nextDay', day: 1 })).toBe(feedback);
+
+    const summary = finishDay(start(), order);
+    expect(canAdvanceDay(summary, content)).toBe(true);
+    expect(act(summary, { type: 'nextDay', day: 2 })).toBe(summary);
+    expect(act({ ...summary, records: [] }, { type: 'nextDay', day: 1 }).day).toBe(1);
+    const next = act(summary, { type: 'nextDay', day: 1 });
+    expect(next).toMatchObject({ phase: 'briefing', day: 2, position: 0, seed: 'maintainer-001',
+      contentVersion: '1.0.0', draft: { verdict: null, evidenceIds: [] } });
+    expect(next.records).toEqual(summary.records);
+    expect(workTime(next, content)).toBe('09:00');
+    expect(summarize(next.records, content)).toMatchObject({ points: 60, reviewed: 6 });
+    expect(act(next, { type: 'nextDay', day: 1 })).toBe(next);
+    expect(act(next, { type: 'submit', caseId: 'd2-01' })).toBe(next);
+    const nextReview = act(next, { type: 'startReview' });
+    expect(currentCase(nextReview, content).id).toBe('d2-01');
+    expect(act(nextReview, { type: 'submit', caseId: 'd1-01' })).toBe(nextReview);
+  });
+
+  test('第二天集合独立、旧 R1 仍计分，十二次全对累计 120 分且未加载第三天不可进入', () => {
+    const first = finishDay(start(), order);
+    const next = act(act(first, { type: 'nextDay', day: 1 }), { type: 'startReview' });
+    const summary = finishDay(next, ['d2-01', 'd2-02', 'd2-03', 'd2-04', 'd2-05', 'd2-06']);
+    expect(summary.day).toBe(2);
+    expect(workTime(summary, content)).toBe('18:00');
+    expect(new Set(summary.records.map((record) => record.caseId)).size).toBe(12);
+    expect(summarize(summary.records, content)).toEqual({ points: 120, maxPoints: 120, reviewed: 12,
+      correctVerdicts: 12, violationsMerged: 0, bugsMerged: 0, goodPrsHarmed: 0 });
+    expect(canAdvanceDay(summary, content)).toBe(false);
+    expect(act(summary, { type: 'nextDay', day: 2 })).toBe(summary);
+    expect(act(summary, { type: 'nextDay', day: 1 })).toBe(summary);
+    const missing = { ...content, cases: content.cases.filter((item) => item.id !== 'd2-03') };
+    expect(canAdvanceDay(first, missing)).toBe(false);
+    expect(transition(first, { type: 'nextDay', day: 1 }, missing)).toBe(first);
   });
 });

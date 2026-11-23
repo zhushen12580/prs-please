@@ -93,7 +93,7 @@ test.describe('第一天裁决反馈 · 证据与三种裁决', () => {
       await expect(records.nth(index)).toContainText(`本题得分：${step.points}/10`);
       await expect(records.nth(index).getByRole('heading', { name: '判题解释', exact: true })).toBeVisible();
     }
-    await expect(page.getByRole('button', { name: '下一天', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '下一天', exact: true })).toBeEnabled();
     await expect(page.getByRole('button', { name: '提交裁决', exact: true })).toHaveCount(0);
   });
 
