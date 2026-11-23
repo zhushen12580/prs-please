@@ -15,6 +15,7 @@ beforeEach(() => {
 
 afterEach(() => {
   document.body.replaceChildren();
+  localStorage.clear();
   dialogMethods.forEach((name, index) => {
     const descriptor = originalMethods[index];
     if (descriptor) Object.defineProperty(HTMLDialogElement.prototype, name, descriptor);

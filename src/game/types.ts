@@ -103,3 +103,8 @@ export interface GameState {
     readonly evidenceIds: readonly string[];
   };
 }
+
+// 存档只包含可重放的进度；队列、时钟和统计由内容与记录推导。
+export interface GameSave extends GameState {
+  readonly saveVersion: 1;
+}

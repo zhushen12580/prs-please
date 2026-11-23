@@ -3,6 +3,7 @@ import { mountApp } from '../../src/ui/app';
 
 afterEach(() => {
   document.body.replaceChildren();
+  localStorage.clear();
 });
 
 function openHome() {

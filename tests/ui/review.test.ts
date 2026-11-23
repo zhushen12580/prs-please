@@ -5,7 +5,10 @@ import { mountApp } from '../../src/ui/app';
 import { createManual } from '../../src/ui/manual';
 import { createReview } from '../../src/ui/review';
 
-afterEach(() => document.body.replaceChildren());
+afterEach(() => {
+  document.body.replaceChildren();
+  localStorage.clear();
+});
 
 function firstCase(id = 'd1-02'): ReviewCase {
   const reviewCase = getDayCases(1).find((entry) => entry.id === id);

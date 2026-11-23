@@ -2,6 +2,7 @@ import { campaign, cases, rules } from '../content/load';
 import { summarize } from '../game/score';
 import { canAdvanceDay, canFinishCampaign, canSubmit, createGame, currentCase, transition, workTime, type GameAction } from '../game/state';
 import type { GameState } from '../game/types';
+import { loadGame, saveGame } from '../platform/storage';
 import { createBriefing } from './briefing';
 import { confirmRestart } from './confirm';
 import { createDecision } from './decision';
@@ -35,19 +36,21 @@ export function mountApp(root: HTMLElement): void {
   const view = document.createElement('div');
   view.className = 'app-view';
   const content = { campaign, cases, rules };
-  let state: GameState | undefined;
+  let state: GameState | undefined = loadGame(window.localStorage, content);
 
   function dispatch(action: GameAction): boolean {
     if (!state) return false;
     const next = transition(state, action, content);
     if (next === state) return false;
     state = next;
+    saveGame(window.localStorage, state);
     return true;
   }
 
   function requestStart(seed: string): void {
     if (!state) {
       state = createGame(seed, content);
+      saveGame(window.localStorage, state);
       render();
       return;
     }

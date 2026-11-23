@@ -7,7 +7,13 @@ const verdictLabels: Record<Verdict, string> = { approve: '批准', request_chan
 export async function startReview(page: Page, seed = 'maintainer-001'): Promise<void> {
   await page.goto('./');
   await page.getByLabel('挑战种子').fill(seed);
-  await page.getByRole('button', { name: '开始值班', exact: true }).click();
+  const restart = page.getByRole('button', { name: '重新开始', exact: true });
+  if (await restart.isVisible()) {
+    await restart.click();
+    await page.getByRole('button', { name: '确认覆盖', exact: true }).click();
+  } else {
+    await page.getByRole('button', { name: '开始值班', exact: true }).click();
+  }
   await page.getByRole('button', { name: '开始评审', exact: true }).click();
 }
 
