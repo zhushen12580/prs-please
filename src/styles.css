@@ -50,6 +50,10 @@ p {
   border-bottom: 1px solid var(--border);
 }
 
+.home-button {
+  margin-top: 1rem;
+}
+
 .eyebrow,
 .rule-badge {
   color: var(--green);
@@ -450,6 +454,34 @@ code {
 
 .rule-manual::backdrop {
   background: #302d2970;
+}
+
+.restart-confirm {
+  width: min(34rem, calc(100% - 2rem));
+  max-height: calc(100svh - 2rem);
+  padding: 1.5rem;
+  color: inherit;
+  background: #fffdf7;
+  border: 1px solid #827b70;
+  border-radius: 0.5rem;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+
+.restart-confirm::backdrop {
+  background: #302d2970;
+}
+
+.shift-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-block: 1rem;
+}
+
+.shift-actions > .primary-button {
+  margin: 0;
 }
 
 .manual-header {

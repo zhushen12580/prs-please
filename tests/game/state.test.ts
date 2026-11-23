@@ -11,6 +11,37 @@ const times = ['10:30', '12:00', '13:30', '15:00', '16:30', '18:00'];
 const act = (state: GameState, action: Parameters<typeof transition>[1]) => transition(state, action, content);
 const start = () => act(createGame('maintainer-001', content), { type: 'startReview' });
 
+describe('重新开局', () => {
+  test.each(['briefing', 'review', 'feedback', 'daySummary', 'final'] as const)('%s 阶段确认重开后只保留指定种子和内容版本', (phase) => {
+    const previous: GameState = { ...start(), phase, day: 3, position: 2,
+      records: [{ caseId: 'd1-02', verdict: 'approve', evidenceIds: ['disclosure'] }],
+      draft: { verdict: 'request_changes', evidenceIds: ['disclosure'] } };
+    const snapshot = structuredClone(previous);
+    for (const seed of ['maintainer-001', ' \tmaintainer-002\n ']) {
+      const fresh = act(previous, { type: 'restart', seed });
+      expect(fresh).toEqual({ seed: seed.trim(), contentVersion: '1.0.0', phase: 'briefing', day: 1,
+        position: 0, records: [], draft: { verdict: null, evidenceIds: [] } });
+      expect(fresh.records).not.toBe(previous.records);
+      expect(fresh.draft).not.toBe(previous.draft);
+      expect(workTime(fresh, content)).toBe('09:00');
+      expect(summarize(fresh.records, content)).toMatchObject({ points: 0, reviewed: 0 });
+      expect(currentCase(fresh, content).id).toBe(seed.trim() === 'maintainer-001' ? 'd1-02' : 'd1-03');
+      const review = act(fresh, { type: 'startReview' });
+      const selected = act(review, { type: 'selectVerdict', verdict: 'approve' });
+      const feedback = act(selected, { type: 'submit', caseId: currentCase(selected, content).id });
+      expect(feedback.records).toHaveLength(1);
+      expect(summarize(feedback.records, content).points).toBe(10);
+    }
+    expect(previous).toEqual(snapshot);
+  });
+
+  test.each(['', 'bad seed', '中文', 'a'.repeat(33)])('非法重开种子 %j 不丢弃当前局', (seed) => {
+    const previous = act(act(start(), { type: 'selectVerdict', verdict: 'approve' }), { type: 'submit', caseId: 'd1-02' });
+    expect(act(previous, { type: 'restart', seed })).toBe(previous);
+    expect(summarize(previous.records, content).points).toBe(10);
+  });
+});
+
 describe('第一天纯状态机', () => {
   test('初始化种子和简报；开始评审前、选证据和选裁决不推进时钟', () => {
     const initial = createGame(' maintainer-001 ', content);

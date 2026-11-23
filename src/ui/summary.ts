@@ -52,7 +52,7 @@ export function createDaySummary(state: GameState, content: GameContent, onNextD
   return section;
 }
 
-export function createFinalSummary(state: GameState, content: GameContent): HTMLElement {
+export function createFinalSummary(state: GameState, content: GameContent, navigation?: { onReplay: () => void; onHome: () => void }): HTMLElement {
   const section = document.createElement('section');
   section.className = 'final-summary';
   section.setAttribute('aria-labelledby', 'final-summary-title');
@@ -63,6 +63,23 @@ export function createFinalSummary(state: GameState, content: GameContent): HTML
   const seed = document.createElement('p');
   seed.textContent = `挑战种子：${state.seed}`;
   const totals = summarize(state.records, content);
-  section.append(title, seed, createStatistics(totals, '总得分'), createReviewLog(state.records, content));
+  section.append(title, seed, createStatistics(totals, '总得分'));
+  if (navigation) {
+    const actions = document.createElement('div');
+    actions.className = 'shift-actions';
+    const replay = document.createElement('button');
+    replay.type = 'button';
+    replay.className = 'primary-button';
+    replay.textContent = '同种子再来一次';
+    replay.addEventListener('click', navigation.onReplay);
+    const home = document.createElement('button');
+    home.type = 'button';
+    home.className = 'secondary-button';
+    home.textContent = '返回首页';
+    home.addEventListener('click', navigation.onHome);
+    actions.append(replay, home);
+    section.append(actions);
+  }
+  section.append(createReviewLog(state.records, content));
   return section;
 }

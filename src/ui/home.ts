@@ -1,12 +1,13 @@
 import { normalizeSeed } from '../game/random';
 
-export function createHome(onStart: (seed: string) => void): HTMLElement {
+export function createHome(onStart: (seed: string) => void, options: { seed?: string; onContinue?: () => void } = {}): HTMLElement {
   const section = document.createElement('section');
   section.className = 'home';
   section.setAttribute('aria-labelledby', 'home-title');
 
   const title = document.createElement('h2');
   title.id = 'home-title';
+  title.tabIndex = -1;
   title.textContent = '轮到你值班了。';
 
   const introduction = document.createElement('p');
@@ -50,7 +51,7 @@ export function createHome(onStart: (seed: string) => void): HTMLElement {
   input.id = 'shift-seed';
   input.name = 'seed';
   input.type = 'text';
-  input.value = 'maintainer-001';
+  input.value = options.seed ?? 'maintainer-001';
   input.autocomplete = 'off';
   input.setAttribute('autocapitalize', 'none');
   input.spellcheck = false;
@@ -65,7 +66,7 @@ export function createHome(onStart: (seed: string) => void): HTMLElement {
   const start = document.createElement('button');
   start.type = 'submit';
   start.className = 'primary-button';
-  start.textContent = '开始值班';
+  start.textContent = options.onContinue ? '重新开始' : '开始值班';
 
   input.addEventListener('input', () => {
     input.removeAttribute('aria-invalid');
@@ -87,6 +88,18 @@ export function createHome(onStart: (seed: string) => void): HTMLElement {
   });
 
   form.append(label, hint, input, error, start);
-  section.append(title, introduction, duration, verdicts, form);
+  section.append(title, introduction, duration, verdicts);
+  if (options.onContinue) {
+    const resume = document.createElement('button');
+    resume.type = 'button';
+    resume.className = 'secondary-button';
+    resume.textContent = '继续值班';
+    resume.addEventListener('click', options.onContinue);
+    const current = document.createElement('p');
+    current.className = 'shift-details';
+    current.textContent = `当前局种子：${input.value}。继续值班可回到离开时的位置。`;
+    section.append(resume, current);
+  }
+  section.append(form);
   return section;
 }

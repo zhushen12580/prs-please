@@ -3,6 +3,7 @@ import { summarize } from '../game/score';
 import { canAdvanceDay, canFinishCampaign, canSubmit, createGame, currentCase, transition, workTime, type GameAction } from '../game/state';
 import type { GameState } from '../game/types';
 import { createBriefing } from './briefing';
+import { confirmRestart } from './confirm';
 import { createDecision } from './decision';
 import { createFeedback } from './feedback';
 import { createHome } from './home';
@@ -23,24 +24,53 @@ export function mountApp(root: HTMLElement): void {
   const title = document.createElement('h1');
   title.textContent = 'PRs, Please';
 
-  header.append(eyebrow, title);
+  const homeButton = document.createElement('button');
+  homeButton.type = 'button';
+  homeButton.className = 'secondary-button home-button';
+  homeButton.textContent = '返回首页';
+  homeButton.hidden = true;
+  homeButton.addEventListener('click', renderHome);
+  header.append(eyebrow, title, homeButton);
 
   const view = document.createElement('div');
   view.className = 'app-view';
   const content = { campaign, cases, rules };
-  let state: GameState;
+  let state: GameState | undefined;
 
   function dispatch(action: GameAction): boolean {
+    if (!state) return false;
     const next = transition(state, action, content);
     if (next === state) return false;
     state = next;
     return true;
   }
 
+  function requestStart(seed: string): void {
+    if (!state) {
+      state = createGame(seed, content);
+      render();
+      return;
+    }
+    confirmRestart(view, state.seed, seed, () => {
+      if (dispatch({ type: 'restart', seed })) render();
+    });
+  }
+
+  function renderHome(): void {
+    main.classList.remove('app-workbench');
+    homeButton.hidden = true;
+    const home = createHome(requestStart, { seed: state?.seed, onContinue: state ? render : undefined });
+    view.replaceChildren(home);
+    home.querySelector<HTMLHeadingElement>('h2')?.focus();
+  }
+
   function render(): void {
+    if (!state) return;
+    const activeDay = state.day;
+    homeButton.hidden = state.phase === 'final';
     main.classList.toggle('app-workbench', state.phase !== 'briefing');
     if (state.phase === 'briefing') {
-      const day = campaign.days.find((entry) => entry.day === state.day);
+      const day = campaign.days.find((entry) => entry.day === activeDay);
       const newRule = rules.find((rule) => rule.id === day?.newRuleId);
       if (!newRule) throw new Error(`缺少第 ${state.day} 天规则`);
       const briefing = createBriefing(state.seed, state.day, newRule);
@@ -57,7 +87,8 @@ export function mountApp(root: HTMLElement): void {
       return;
     }
     if (state.phase === 'final') {
-      const summary = createFinalSummary(state, content);
+      const seed = state.seed;
+      const summary = createFinalSummary(state, content, { onReplay: () => requestStart(seed), onHome: renderHome });
       view.replaceChildren(summary);
       summary.querySelector<HTMLHeadingElement>('h2')?.focus();
       return;
@@ -75,14 +106,15 @@ export function mountApp(root: HTMLElement): void {
     }
     const reviewCase = currentCase(state, content);
     const locked = state.phase === 'feedback';
-    const decisionStatus = () => ({ verdict: state.draft.verdict, canSubmit: canSubmit(state, content), locked: state.phase !== 'review' });
+    const decisionStatus = () => ({ verdict: state?.draft.verdict ?? null,
+      canSubmit: state ? canSubmit(state, content) : false, locked: state?.phase !== 'review' });
     const decision = createDecision(decisionStatus(), (verdict) => {
       dispatch({ type: 'selectVerdict', verdict });
       decision.update(decisionStatus());
     }, () => {
       if (dispatch({ type: 'submit', caseId: reviewCase.id })) render();
     });
-    const definition = campaign.days.find((entry) => entry.day === state.day);
+    const definition = campaign.days.find((entry) => entry.day === activeDay);
     if (!definition) throw new Error(`缺少第 ${state.day} 天关卡`);
     let feedback: HTMLElement | undefined;
     if (locked) {
@@ -115,11 +147,7 @@ export function mountApp(root: HTMLElement): void {
     (feedback ?? review).querySelector<HTMLHeadingElement>('h2')?.focus();
   }
 
-  view.append(createHome((seed) => {
-    state = createGame(seed, content);
-    render();
-  }));
-
   main.append(header, view);
   root.replaceChildren(main);
+  renderHome();
 }

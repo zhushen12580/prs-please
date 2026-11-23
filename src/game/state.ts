@@ -2,6 +2,7 @@ import { normalizeSeed, orderCases } from './random';
 import type { GameContent, GameState, ReviewCase, Verdict } from './types';
 
 export type GameAction =
+  | { type: 'restart'; seed: string }
   | { type: 'startReview' }
   | { type: 'selectVerdict'; verdict: Verdict }
   | { type: 'selectEvidence'; evidenceIds: readonly string[] }
@@ -74,6 +75,9 @@ export function canFinishCampaign(state: GameState, content: GameContent): boole
 }
 
 export function transition(state: GameState, action: GameAction, content: GameContent): GameState {
+  if (action.type === 'restart') {
+    return normalizeSeed(action.seed) === null ? state : createGame(action.seed, content);
+  }
   if (action.type === 'finishCampaign') {
     return action.day === state.day && canFinishCampaign(state, content) ? { ...state, phase: 'final' } : state;
   }
