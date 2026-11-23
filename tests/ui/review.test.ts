@@ -13,10 +13,10 @@ function firstCase(id = 'd1-02'): ReviewCase {
   return reviewCase;
 }
 
-function renderCase(reviewCase = firstCase()) {
+function renderCase(reviewCase = firstCase(), day = 1) {
   const onEvidenceChange = vi.fn();
   const review = createReview({
-    reviewCase, day: 1, position: 1, total: 6, time: '09:00', rules, onEvidenceChange,
+    reviewCase, day, position: 1, total: 6, time: '09:00', rules, onEvidenceChange,
   });
   document.body.append(review);
   return { review, onEvidenceChange };
@@ -113,6 +113,30 @@ describe('工作台材料', () => {
     deleted.click();
     expect(context.getAttribute('aria-pressed')).toBe('true');
     expect(onEvidenceChange).toHaveBeenLastCalledWith(['page-function']);
+  });
+
+  test.each([
+    ['d4-03', 'fee-free-assertion', '6', '—', '−'],
+    ['d4-05', 'rows-exact-assertion', '7', '—', '−'],
+    ['d4-05', 'rows-vacuous-assertion', '—', '7', '+'],
+  ])('第四天 %s 的必要证据 %s 显示适用行号，按稳定 ID 选择和取消', (caseId, id, oldLine, newLine, marker) => {
+    const item = getDayCases(4).find((entry) => entry.id === caseId);
+    if (!item) throw new Error(caseId);
+    const { review, onEvidenceChange } = renderCase(item, 4);
+    const button = evidence(review, id);
+    expect(button.querySelector('.diff-old-line')?.textContent).toBe(oldLine);
+    expect(button.querySelector('.diff-old-line')?.getAttribute('aria-label')).toBe(`旧行 ${oldLine}`);
+    expect(button.querySelector('.diff-new-line')?.textContent).toBe(newLine);
+    expect(button.querySelector('.diff-new-line')?.getAttribute('aria-label')).toBe(`新行 ${newLine}`);
+    expect(button.querySelector('.diff-marker')?.textContent).toBe(marker);
+    expect(button.getAttribute('aria-pressed')).toBe('false');
+    button.click();
+    expect(onEvidenceChange).toHaveBeenLastCalledWith([id]);
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+    expect(button.textContent).toContain('已选');
+    button.click();
+    expect(onEvidenceChange).toHaveBeenLastCalledWith([]);
+    expect(review.querySelector('time')?.textContent).toBe('09:00');
   });
 
   test('HTML 字符串作为原文渲染，所有材料与可选 API 参考均不会产生元素或事件', () => {

@@ -1,0 +1,973 @@
+[
+  {
+    "id": "d4-01",
+    "title": "将路由分段解码测试整理为表格用例",
+    "description": {
+      "summary": "虚构项目「路签」约定：路由分段按 decodeURIComponent 解码，普通字符串原样保留，编码斜杠解码为斜杠。本次仅把两份重复测试改为表格，生产函数不变；请核对输入与精确期望是否仍然相同。",
+      "disclosure": {
+        "id": "disclosure",
+        "text": "未使用 AI 辅助；本次改动由手工编写。"
+      }
+    },
+    "contributor": {
+      "name": "何澄（虚构）",
+      "handle": "route-table-fictional",
+      "toolRecords": [
+        {
+          "id": "tool-route-table-fictional",
+          "text": "虚构投稿工具记录：手工整理两份路由测试为参数表；未使用 AI，未改生产实现。"
+        }
+      ]
+    },
+    "ci": {
+      "status": "passed",
+      "logs": [
+        {
+          "id": "ci-route-table",
+          "text": "PASS route-segment.test.ts：普通字符串与编码斜杠两个参数用例全部通过；完整测试与类型检查通过。"
+        }
+      ]
+    },
+    "files": [
+      {
+        "path": "src/route-segment.ts",
+        "lines": [
+          {
+            "id": "route-contract",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "// 路由分段使用标准 URI 解码；编码斜杠也需还原。"
+          },
+          {
+            "id": "route-function",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "export function decodeSegment(input: string): string {"
+          },
+          {
+            "id": "route-return",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "  return decodeURIComponent(input);"
+          },
+          {
+            "id": "route-close",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "}"
+          }
+        ]
+      },
+      {
+        "path": "tests/route-segment.test.ts",
+        "lines": [
+          {
+            "id": "route-test-import",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "import { expect, test } from 'vitest';"
+          },
+          {
+            "id": "route-test-subject",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "import { decodeSegment } from '../src/route-segment';"
+          },
+          {
+            "id": "route-old-plain-open",
+            "kind": "delete",
+            "oldLine": 3,
+            "newLine": null,
+            "text": "test('保留普通分段', () => {"
+          },
+          {
+            "id": "route-old-plain",
+            "kind": "delete",
+            "oldLine": 4,
+            "newLine": null,
+            "text": "  expect(decodeSegment('hello')).toBe('hello');"
+          },
+          {
+            "id": "route-old-plain-close",
+            "kind": "delete",
+            "oldLine": 5,
+            "newLine": null,
+            "text": "});"
+          },
+          {
+            "id": "route-old-encoded-open",
+            "kind": "delete",
+            "oldLine": 6,
+            "newLine": null,
+            "text": "test('还原编码斜杠', () => {"
+          },
+          {
+            "id": "route-old-encoded",
+            "kind": "delete",
+            "oldLine": 7,
+            "newLine": null,
+            "text": "  expect(decodeSegment('docs%2Fintro')).toBe('docs/intro');"
+          },
+          {
+            "id": "route-old-encoded-close",
+            "kind": "delete",
+            "oldLine": 8,
+            "newLine": null,
+            "text": "});"
+          },
+          {
+            "id": "route-table-open",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 3,
+            "text": "test.each(["
+          },
+          {
+            "id": "route-table-plain",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 4,
+            "text": "  ['hello', 'hello'],"
+          },
+          {
+            "id": "route-table-encoded",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 5,
+            "text": "  ['docs%2Fintro', 'docs/intro'],"
+          },
+          {
+            "id": "route-table-callback",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 6,
+            "text": "])('解码路由分段 %s', (input, expected) => {"
+          },
+          {
+            "id": "route-table-assertion",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 7,
+            "text": "  expect(decodeSegment(input)).toBe(expected);"
+          },
+          {
+            "id": "route-table-close",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 8,
+            "text": "});"
+          }
+        ]
+      }
+    ],
+    "finding": null,
+    "sources": [
+      {
+        "url": "https://curl.se/dev/contribute.html",
+        "theme": "贡献评审中用测试核对文档约定与回归覆盖",
+        "note": "借鉴 curl 贡献指南要求测试验证文档行为、说明验证方式的主题；R4 是本游戏的虚构项目规则，不冒充 curl 的完整政策。项目、人物、代码、工具记录与 CI 日志均为原创虚构，不复制真实补丁。"
+      }
+    ],
+    "approvalExplanation": "两项旧测试的输入 hello、docs%2Fintro 与期望 hello、docs/intro 在 test.each 中逐一保留，仍使用精确 toBe 断言。生产实现未变且 CI 通过，覆盖保持，可以批准。删除重复的测试外壳并不等于删除覆盖；应对照新增参数与断言判断，不能只看删除标记。"
+  },
+  {
+    "id": "d4-02",
+    "title": "为并行报告测试分配独立临时目录",
+    "description": {
+      "summary": "虚构项目「报匣」在多个工作进程并行运行时，都使用同名 report-fixture 临时目录；一个进程清理目录会影响另一个进程的文件读写。本次让每次测试创建独立目录，仍核对完整报告内容并在测试后清理。文件内用例按顺序执行。",
+      "disclosure": {
+        "id": "disclosure",
+        "text": "未使用 AI 辅助；本次改动由手工编写。"
+      }
+    },
+    "contributor": {
+      "name": "唐芮（虚构）",
+      "handle": "report-isolation-fictional",
+      "toolRecords": [
+        {
+          "id": "tool-report-isolation-fictional",
+          "text": "虚构投稿工具记录：手工复现两工作进程共享目录的冲突，改为每次创建独立临时目录；未使用 AI。"
+        }
+      ]
+    },
+    "ci": {
+      "status": "passed",
+      "logs": [
+        {
+          "id": "ci-isolation",
+          "text": "PASS report.test.ts：并行工作进程重复运行均通过，完整报告内容断言仍执行；完整测试和类型检查通过。"
+        }
+      ]
+    },
+    "files": [
+      {
+        "path": "tests/report.test.ts",
+        "lines": [
+          {
+            "id": "isolation-old-import",
+            "kind": "delete",
+            "oldLine": 1,
+            "newLine": null,
+            "text": "import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';"
+          },
+          {
+            "id": "isolation-new-import",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 1,
+            "text": "import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';"
+          },
+          {
+            "id": "isolation-os",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "import { tmpdir } from 'node:os';"
+          },
+          {
+            "id": "isolation-path",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "import { join } from 'node:path';"
+          },
+          {
+            "id": "isolation-vitest",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "import { afterEach, beforeEach, expect, test } from 'vitest';"
+          },
+          {
+            "id": "isolation-shared-root",
+            "kind": "delete",
+            "oldLine": 5,
+            "newLine": null,
+            "text": "const root = join(tmpdir(), 'report-fixture');"
+          },
+          {
+            "id": "isolation-root",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 5,
+            "text": "let root: string;"
+          },
+          {
+            "id": "isolation-before",
+            "kind": "context",
+            "oldLine": 6,
+            "newLine": 6,
+            "text": "beforeEach(() => {"
+          },
+          {
+            "id": "isolation-old-create",
+            "kind": "delete",
+            "oldLine": 7,
+            "newLine": null,
+            "text": "  mkdirSync(root, { recursive: true });"
+          },
+          {
+            "id": "isolation-unique-root",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 7,
+            "text": "  root = mkdtempSync(join(tmpdir(), 'report-'));"
+          },
+          {
+            "id": "isolation-before-close",
+            "kind": "context",
+            "oldLine": 8,
+            "newLine": 8,
+            "text": "});"
+          },
+          {
+            "id": "isolation-cleanup",
+            "kind": "context",
+            "oldLine": 9,
+            "newLine": 9,
+            "text": "afterEach(() => rmSync(root, { recursive: true, force: true }));"
+          },
+          {
+            "id": "isolation-test-open",
+            "kind": "context",
+            "oldLine": 10,
+            "newLine": 10,
+            "text": "test('保存完整报告', () => {"
+          },
+          {
+            "id": "isolation-file",
+            "kind": "context",
+            "oldLine": 11,
+            "newLine": 11,
+            "text": "  const file = join(root, 'report.txt');"
+          },
+          {
+            "id": "isolation-write",
+            "kind": "context",
+            "oldLine": 12,
+            "newLine": 12,
+            "text": "  writeFileSync(file, 'report: ready', 'utf8');"
+          },
+          {
+            "id": "isolation-content-assertion",
+            "kind": "context",
+            "oldLine": 13,
+            "newLine": 13,
+            "text": "  expect(readFileSync(file, 'utf8')).toBe('report: ready');"
+          },
+          {
+            "id": "isolation-test-close",
+            "kind": "context",
+            "oldLine": 14,
+            "newLine": 14,
+            "text": "});"
+          }
+        ]
+      }
+    ],
+    "finding": null,
+    "sources": [
+      {
+        "url": "https://curl.se/dev/contribute.html",
+        "theme": "贡献评审中用测试核对文档约定与回归覆盖",
+        "note": "借鉴 curl 贡献指南要求测试验证文档行为、说明验证方式的主题；R4 是本游戏的虚构项目规则，不冒充 curl 的完整政策。项目、人物、代码、工具记录与 CI 日志均为原创虚构，不复制真实补丁。"
+      }
+    ],
+    "approvalExplanation": "共享固定目录确实会造成跨工作进程清理冲突；mkdtempSync 为每次测试建立独立目录，afterEach 只清理本次目录。完整内容的 toBe 断言保持不变，没有 skip、放宽期望或减少覆盖。CI 通过与可见隔离修复相符，应批准；不能因为它处理 flaky 测试就推断在掩盖失败。"
+  },
+  {
+    "id": "d4-03",
+    "title": "整理运费边界测试的重复检查",
+    "description": {
+      "summary": "虚构项目「邮笺」文档约定：订单总额低于 50 时运费为 5，达到 50 时免运费。上一轮免邮边界测试期望 0、实际 5。本次提交称精简重复检查，生产函数保持不变；附上完整的收费与免邮测试片段。",
+      "disclosure": {
+        "id": "disclosure",
+        "text": "未使用 AI 辅助；本次改动由手工编写。"
+      }
+    },
+    "contributor": {
+      "name": "周槿（虚构）",
+      "handle": "delivery-checks-fictional",
+      "toolRecords": [
+        {
+          "id": "tool-delivery-checks-fictional",
+          "text": "虚构投稿工具记录：手工编辑运费测试文件后重新运行 CI；未使用 AI，生产运费函数没有改动。"
+        }
+      ]
+    },
+    "ci": {
+      "status": "passed",
+      "logs": [
+        {
+          "id": "ci-fee",
+          "text": "PASS delivery-fee.test.ts：收费边界与空订单用例通过；完整检查通过。当前收费边界测试只执行一条断言。"
+        }
+      ]
+    },
+    "files": [
+      {
+        "path": "src/delivery-fee.ts",
+        "lines": [
+          {
+            "id": "fee-contract",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "// 文档约定：total < 50 收费 5；total >= 50 免运费。"
+          },
+          {
+            "id": "fee-function",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "export function deliveryFee(total: number): number {"
+          },
+          {
+            "id": "fee-return",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "  return 5;"
+          },
+          {
+            "id": "fee-close",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "}"
+          }
+        ]
+      },
+      {
+        "path": "tests/delivery-fee.test.ts",
+        "lines": [
+          {
+            "id": "fee-test-import",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "import { expect, test } from 'vitest';"
+          },
+          {
+            "id": "fee-test-subject",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "import { deliveryFee } from '../src/delivery-fee';"
+          },
+          {
+            "id": "fee-test-contract",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "// 收费和免邮是两个不同的边界。"
+          },
+          {
+            "id": "fee-test-open",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "test('收费与免邮边界', () => {"
+          },
+          {
+            "id": "fee-paid-assertion",
+            "kind": "context",
+            "oldLine": 5,
+            "newLine": 5,
+            "text": "  expect(deliveryFee(20)).toBe(5);"
+          },
+          {
+            "id": "fee-free-assertion",
+            "kind": "delete",
+            "oldLine": 6,
+            "newLine": null,
+            "text": "  expect(deliveryFee(50)).toBe(0);"
+          },
+          {
+            "id": "fee-test-close",
+            "kind": "context",
+            "oldLine": 7,
+            "newLine": 6,
+            "text": "});"
+          },
+          {
+            "id": "fee-empty-open",
+            "kind": "context",
+            "oldLine": 8,
+            "newLine": 7,
+            "text": "test('空订单仍收基础运费', () => {"
+          },
+          {
+            "id": "fee-empty-assertion",
+            "kind": "context",
+            "oldLine": 9,
+            "newLine": 8,
+            "text": "  expect(deliveryFee(0)).toBe(5);"
+          },
+          {
+            "id": "fee-empty-close",
+            "kind": "context",
+            "oldLine": 10,
+            "newLine": 9,
+            "text": "});"
+          }
+        ]
+      }
+    ],
+    "finding": {
+      "ruleId": "R4",
+      "impact": "bug",
+      "evidenceSets": [
+        [
+          "fee-free-assertion"
+        ]
+      ],
+      "explanation": "删除的是唯一验证满 50 免运费的关键断言，没有等价替代。未改动的实现仍然固定返回 5，上一轮边界失败没有修复；CI 通过只是因为免邮行为已不在覆盖内。旧行 6 的删除行是必要证据，应按 R4 要求恢复有效断言并修复问题。正常的收费断言和绿色日志不能证明测试完整性。"
+    },
+    "sources": [
+      {
+        "url": "https://curl.se/dev/contribute.html",
+        "theme": "贡献评审中用测试核对文档约定与回归覆盖",
+        "note": "借鉴 curl 贡献指南要求测试验证文档行为、说明验证方式的主题；R4 是本游戏的虚构项目规则，不冒充 curl 的完整政策。项目、人物、代码、工具记录与 CI 日志均为原创虚构，不复制真实补丁。"
+      }
+    ]
+  },
+  {
+    "id": "d4-04",
+    "title": "调整归档标题回归用例的运行范围",
+    "description": {
+      "summary": "虚构项目「归页」要求归档标题完整保留中文与英文。上一轮中文标题回归测试得到两个问号而失败；本次仅调整测试运行范围，归档函数没有改变。请对照 CI 执行数量与测试声明。",
+      "disclosure": {
+        "id": "disclosure",
+        "text": "未使用 AI 辅助；本次改动由手工编写。"
+      }
+    },
+    "contributor": {
+      "name": "许棠（虚构）",
+      "handle": "archive-scope-fictional",
+      "toolRecords": [
+        {
+          "id": "tool-archive-scope-fictional",
+          "text": "虚构投稿工具记录：本次只手工修改测试声明，没有改动归档实现；未使用 AI。"
+        }
+      ]
+    },
+    "ci": {
+      "status": "passed",
+      "logs": [
+        {
+          "id": "ci-archive",
+          "text": "PASS archive-title.test.ts：1 passed、1 skipped；完整检查通过，中文标题用例未执行。"
+        }
+      ]
+    },
+    "files": [
+      {
+        "path": "src/archive-title.ts",
+        "lines": [
+          {
+            "id": "archive-contract",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "// 文档约定：所有标题字符原样保留，包括中文。"
+          },
+          {
+            "id": "archive-function",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "export function archiveTitle(title: string): string {"
+          },
+          {
+            "id": "archive-return",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "  return title.replace(/[^\\u0000-\\u007f]/g, '?');"
+          },
+          {
+            "id": "archive-close",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "}"
+          }
+        ]
+      },
+      {
+        "path": "tests/archive-title.test.ts",
+        "lines": [
+          {
+            "id": "archive-test-import",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "import { expect, test } from 'vitest';"
+          },
+          {
+            "id": "archive-test-subject",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "import { archiveTitle } from '../src/archive-title';"
+          },
+          {
+            "id": "archive-ascii-open",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "test('归档标题保留英文', () => {"
+          },
+          {
+            "id": "archive-ascii-assertion",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "  expect(archiveTitle('notes')).toBe('notes');"
+          },
+          {
+            "id": "archive-ascii-close",
+            "kind": "context",
+            "oldLine": 5,
+            "newLine": 5,
+            "text": "});"
+          },
+          {
+            "id": "archive-active-test",
+            "kind": "delete",
+            "oldLine": 6,
+            "newLine": null,
+            "text": "test('归档标题保留中文', () => {"
+          },
+          {
+            "id": "archive-skipped-test",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 6,
+            "text": "test.skip('归档标题保留中文', () => {"
+          },
+          {
+            "id": "archive-chinese-assertion",
+            "kind": "context",
+            "oldLine": 7,
+            "newLine": 7,
+            "text": "  expect(archiveTitle('周报')).toBe('周报');"
+          },
+          {
+            "id": "archive-chinese-close",
+            "kind": "context",
+            "oldLine": 8,
+            "newLine": 8,
+            "text": "});"
+          }
+        ]
+      }
+    ],
+    "finding": {
+      "ruleId": "R4",
+      "impact": "bug",
+      "evidenceSets": [
+        [
+          "archive-skipped-test"
+        ]
+      ],
+      "explanation": "新增 test.skip 使原本失败的中文标题回归用例不再执行，相关断言虽然还在文件中，运行覆盖已经丢失。生产实现仍把中文替换为问号，CI 通过来自跳过失败，并非修复。新增的 skip 声明足以证明 R4 违规，应要求恢复用例并修正实现。"
+    },
+    "sources": [
+      {
+        "url": "https://curl.se/dev/contribute.html",
+        "theme": "贡献评审中用测试核对文档约定与回归覆盖",
+        "note": "借鉴 curl 贡献指南要求测试验证文档行为、说明验证方式的主题；R4 是本游戏的虚构项目规则，不冒充 curl 的完整政策。项目、人物、代码、工具记录与 CI 日志均为原创虚构，不复制真实补丁。"
+      }
+    ]
+  },
+  {
+    "id": "d4-05",
+    "title": "统一空表解析测试的检查写法",
+    "description": {
+      "summary": "虚构项目「行匣」文档约定：空字符串解析成零行，非空文本按换行拆分。上一轮空表测试发现结果多出一行。本次统一检查写法，解析实现不变，非空表测试也保留。",
+      "disclosure": {
+        "id": "disclosure",
+        "text": "未使用 AI 辅助；本次改动由手工编写。"
+      }
+    },
+    "contributor": {
+      "name": "梁知（虚构）",
+      "handle": "empty-rows-fictional",
+      "toolRecords": [
+        {
+          "id": "tool-empty-rows-fictional",
+          "text": "虚构投稿工具记录：手工替换空表用例中的断言，未修改解析函数，也未使用 AI。"
+        }
+      ]
+    },
+    "ci": {
+      "status": "passed",
+      "logs": [
+        {
+          "id": "ci-rows",
+          "text": "PASS read-rows.test.ts：空表与非空表用例均通过；完整检查通过。"
+        }
+      ]
+    },
+    "files": [
+      {
+        "path": "src/read-rows.ts",
+        "lines": [
+          {
+            "id": "rows-contract",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "// 文档约定：空文本返回 []；其他文本按换行拆分。"
+          },
+          {
+            "id": "rows-function",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "export function readRows(text: string): string[] {"
+          },
+          {
+            "id": "rows-return",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "  return text.split('\\n');"
+          },
+          {
+            "id": "rows-close",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "}"
+          }
+        ]
+      },
+      {
+        "path": "tests/read-rows.test.ts",
+        "lines": [
+          {
+            "id": "rows-test-import",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "import { expect, test } from 'vitest';"
+          },
+          {
+            "id": "rows-test-subject",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "import { readRows } from '../src/read-rows';"
+          },
+          {
+            "id": "rows-test-contract",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "// 空文本必须得到零行，不能把空字符串算一行。"
+          },
+          {
+            "id": "rows-test-note",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "// 非空表格仍使用原有的完整内容断言。"
+          },
+          {
+            "id": "rows-empty-open",
+            "kind": "context",
+            "oldLine": 5,
+            "newLine": 5,
+            "text": "test('解析空表', () => {"
+          },
+          {
+            "id": "rows-empty-call",
+            "kind": "context",
+            "oldLine": 6,
+            "newLine": 6,
+            "text": "  const rows = readRows('');"
+          },
+          {
+            "id": "rows-exact-assertion",
+            "kind": "delete",
+            "oldLine": 7,
+            "newLine": null,
+            "text": "  expect(rows).toHaveLength(0);"
+          },
+          {
+            "id": "rows-vacuous-assertion",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 7,
+            "text": "  expect(rows.length >= 0).toBe(true);"
+          },
+          {
+            "id": "rows-empty-close",
+            "kind": "context",
+            "oldLine": 8,
+            "newLine": 8,
+            "text": "});"
+          },
+          {
+            "id": "rows-nonempty-open",
+            "kind": "context",
+            "oldLine": 9,
+            "newLine": 9,
+            "text": "test('解析非空表', () => {"
+          },
+          {
+            "id": "rows-nonempty-assertion",
+            "kind": "context",
+            "oldLine": 10,
+            "newLine": 10,
+            "text": "  expect(readRows('a\\nb')).toEqual(['a', 'b']);"
+          },
+          {
+            "id": "rows-nonempty-close",
+            "kind": "context",
+            "oldLine": 11,
+            "newLine": 11,
+            "text": "});"
+          }
+        ]
+      }
+    ],
+    "finding": {
+      "ruleId": "R4",
+      "impact": "bug",
+      "evidenceSets": [
+        [
+          "rows-exact-assertion",
+          "rows-vacuous-assertion"
+        ]
+      ],
+      "explanation": "删除行原本精确要求零行，新增行却只要求数组长度大于等于 0，这对任何数组都为真；一行错误结果也能通过。两行共同证明从精确校验到永真条件的削弱，没有等价覆盖。CI 通过不能抵消空表回归缺口，应按 R4 要求恢复精确断言并修复解析。只选其中一行不足以说明完整的替换关系。"
+    },
+    "sources": [
+      {
+        "url": "https://curl.se/dev/contribute.html",
+        "theme": "贡献评审中用测试核对文档约定与回归覆盖",
+        "note": "借鉴 curl 贡献指南要求测试验证文档行为、说明验证方式的主题；R4 是本游戏的虚构项目规则，不冒充 curl 的完整政策。项目、人物、代码、工具记录与 CI 日志均为原创虚构，不复制真实补丁。"
+      }
+    ]
+  },
+  {
+    "id": "d4-06",
+    "title": "整理构建入口配置",
+    "description": {
+      "summary": "虚构项目「页束」的构建入口文件仍是 src/main.ts，文件没有重命名。本次只整理打包选项，保留检查入口文件存在的构建测试；请核对最新 CI 结果。",
+      "disclosure": {
+        "id": "disclosure",
+        "text": "未使用 AI 辅助；本次改动由手工编写。"
+      }
+    },
+    "contributor": {
+      "name": "陈汐（虚构）",
+      "handle": "build-entry-fictional",
+      "toolRecords": [
+        {
+          "id": "tool-build-entry-fictional",
+          "text": "虚构投稿工具记录：手工编辑构建选项并运行完整检查；未使用 AI，未删除或跳过测试。"
+        }
+      ]
+    },
+    "ci": {
+      "status": "failed",
+      "logs": [
+        {
+          "id": "ci-build-failure",
+          "text": "FAIL build-options.test.ts：入口 src/mian.ts 不存在，expected true, received false；构建同样失败：entry file src/mian.ts not found。"
+        }
+      ]
+    },
+    "files": [
+      {
+        "path": "build-options.ts",
+        "lines": [
+          {
+            "id": "build-contract",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "// 项目入口文件名为 src/main.ts。"
+          },
+          {
+            "id": "build-export",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "export const buildOptions = {"
+          },
+          {
+            "id": "build-old-entry",
+            "kind": "delete",
+            "oldLine": 3,
+            "newLine": null,
+            "text": "  entryPoints: ['src/main.ts'],"
+          },
+          {
+            "id": "build-new-entry",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 3,
+            "text": "  entryPoints: ['src/mian.ts'],"
+          },
+          {
+            "id": "build-outdir",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "  outdir: 'dist',"
+          },
+          {
+            "id": "build-bundle",
+            "kind": "context",
+            "oldLine": 5,
+            "newLine": 5,
+            "text": "  bundle: true,"
+          },
+          {
+            "id": "build-close",
+            "kind": "context",
+            "oldLine": 6,
+            "newLine": 6,
+            "text": "};"
+          }
+        ]
+      },
+      {
+        "path": "tests/build-options.test.ts",
+        "lines": [
+          {
+            "id": "build-test-import",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "import { expect, test } from 'vitest';"
+          },
+          {
+            "id": "build-test-fs",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "import { existsSync } from 'node:fs';"
+          },
+          {
+            "id": "build-test-subject",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "import { buildOptions } from '../build-options';"
+          },
+          {
+            "id": "build-test-open",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "test('构建入口文件存在', () => {"
+          },
+          {
+            "id": "build-test-assertion",
+            "kind": "context",
+            "oldLine": 5,
+            "newLine": 5,
+            "text": "  expect(existsSync(buildOptions.entryPoints[0])).toBe(true);"
+          },
+          {
+            "id": "build-test-close",
+            "kind": "context",
+            "oldLine": 6,
+            "newLine": 6,
+            "text": "});"
+          }
+        ]
+      }
+    ],
+    "finding": {
+      "ruleId": "R1",
+      "impact": "bug",
+      "evidenceSets": [
+        [
+          "ci-build-failure"
+        ]
+      ],
+      "explanation": "CI 明确报告构建入口 src/mian.ts 不存在，保留的构建测试也失败，应按一直生效的 R1 要求修改后重审。入口拼写与实际文件名不符；本题没有删除、跳过或放宽测试，不能仅因为第四天新增 R4 就选择测试削弱。"
+    },
+    "sources": [
+      {
+        "url": "https://curl.se/dev/contribute.html",
+        "theme": "贡献评审中用测试核对文档约定与回归覆盖",
+        "note": "借鉴 curl 贡献指南要求测试验证文档行为、说明验证方式的主题；R4 是本游戏的虚构项目规则，不冒充 curl 的完整政策。项目、人物、代码、工具记录与 CI 日志均为原创虚构，不复制真实补丁。"
+      }
+    ]
+  }
+]

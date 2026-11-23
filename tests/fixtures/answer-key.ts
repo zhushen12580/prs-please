@@ -27,4 +27,10 @@ export const answerKey: Record<string, ExpectedAnswer> = {
     ['tool-tests-ai', 'disclosure'], ['tool-tests-import', 'disclosure'],
   ] },
   'd3-06': { verdict: 'request_changes', evidenceSets: [['transaction-invented-call']] },
+  'd4-01': { verdict: 'approve', evidenceSets: [] },
+  'd4-02': { verdict: 'approve', evidenceSets: [] },
+  'd4-03': { verdict: 'request_changes', evidenceSets: [['fee-free-assertion']] },
+  'd4-04': { verdict: 'request_changes', evidenceSets: [['archive-skipped-test']] },
+  'd4-05': { verdict: 'request_changes', evidenceSets: [['rows-exact-assertion', 'rows-vacuous-assertion']] },
+  'd4-06': { verdict: 'request_changes', evidenceSets: [['ci-build-failure']] },
 };

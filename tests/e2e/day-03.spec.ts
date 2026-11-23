@@ -115,7 +115,7 @@ test.describe('第三天披露与复合证据 · 逐日规则', () => {
       await expect(summary).not.toContainText('d2-');
       await expect(summary).toContainText('或满足以下一组：');
       await expect(page.locator('time')).toHaveText('18:00');
-      await expect(page.getByRole('button', { name: '下一天', exact: true })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: '下一天', exact: true })).toBeVisible();
     });
   }
 
