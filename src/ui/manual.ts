@@ -3,6 +3,7 @@ import type { Rule } from '../game/types';
 export function createManual(rules: readonly Rule[], day: number): HTMLDialogElement {
   const manual = document.createElement('dialog');
   manual.className = 'rule-manual';
+  manual.id = 'rule-manual';
   manual.tabIndex = -1;
   manual.setAttribute('aria-labelledby', 'manual-title');
 

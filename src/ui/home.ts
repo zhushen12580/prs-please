@@ -20,12 +20,13 @@ export function createHome(onStart: (seed: string) => void, options: { seed?: st
   const verdicts = document.createElement('dl');
   verdicts.className = 'verdicts';
   const definitions = [
-    ['批准', '符合所有生效规则，允许合入。'],
-    ['要求修改', '存在可修复的问题，标出证据后退回重审。'],
-    ['拒绝', '引入隐藏后门等恶意行为，标出证据并拒绝合入。'],
+    ['approve', '批准', '符合所有生效规则，允许合入。'],
+    ['request_changes', '要求修改', '存在可修复的问题，标出证据后退回重审。'],
+    ['reject', '拒绝', '引入隐藏后门等恶意行为，标出证据并拒绝合入。'],
   ];
-  for (const [name, description] of definitions) {
+  for (const [verdict, name, description] of definitions) {
     const item = document.createElement('div');
+    item.className = `verdict-${verdict}`;
     const term = document.createElement('dt');
     term.textContent = name;
     const detail = document.createElement('dd');

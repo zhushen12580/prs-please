@@ -62,6 +62,7 @@ export function createFinalSummary(state: GameState, content: GameContent, navig
   title.tabIndex = -1;
   title.textContent = '最终成绩';
   const seed = document.createElement('p');
+  seed.className = 'shift-details';
   seed.textContent = `挑战种子：${state.seed}`;
   const totals = summarize(state.records, content);
   section.append(title, seed, createStatistics(totals, '总得分'));

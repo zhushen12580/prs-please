@@ -17,6 +17,7 @@ export function confirmRestart(host: HTMLElement, currentSeed: string, nextSeed:
   cancel.type = 'button';
   cancel.className = 'secondary-button';
   cancel.textContent = '取消';
+  cancel.autofocus = true;
   const confirm = document.createElement('button');
   confirm.type = 'button';
   confirm.className = 'primary-button';

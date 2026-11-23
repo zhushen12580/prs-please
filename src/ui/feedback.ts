@@ -96,6 +96,12 @@ export function createFeedback(reviewCase: ReviewCase, record: DecisionRecord, d
   title.id = 'feedback-title';
   title.tabIndex = -1;
   title.textContent = '裁决反馈';
-  section.append(title, createResultDetails(reviewCase, record, day, rules));
+  const details = createResultDetails(reviewCase, record, day, rules);
+  const outcome = details.querySelector<HTMLElement>('.result-outcome');
+  if (outcome) {
+    outcome.id = 'feedback-outcome';
+    title.setAttribute('aria-describedby', outcome.id);
+  }
+  section.append(title, details);
   return section;
 }

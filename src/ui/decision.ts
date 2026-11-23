@@ -18,13 +18,17 @@ export function createDecision(
   const element = document.createElement('section');
   element.className = 'decision-panel';
   element.setAttribute('aria-label', '裁决区');
+  element.tabIndex = -1;
   const choices = document.createElement('div');
   choices.className = 'decision-choices';
+  choices.setAttribute('role', 'group');
+  choices.setAttribute('aria-label', '选择本份裁决');
   const buttons = (Object.entries(verdictLabels) as [Verdict, string][]).map(([verdict, label]) => {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `secondary-button verdict-${verdict}`;
     button.textContent = label;
+    button.setAttribute('aria-label', label);
     button.addEventListener('click', () => onVerdict(verdict));
     choices.append(button);
     return { button, verdict };
@@ -32,6 +36,8 @@ export function createDecision(
   const hint = document.createElement('p');
   hint.className = 'field-hint';
   hint.id = 'decision-hint';
+  hint.setAttribute('aria-live', 'polite');
+  hint.setAttribute('aria-atomic', 'true');
   const submit = document.createElement('button');
   submit.type = 'button';
   submit.className = 'primary-button';
@@ -39,15 +45,17 @@ export function createDecision(
   submit.setAttribute('aria-describedby', hint.id);
   submit.addEventListener('click', onSubmit);
   const update = ({ verdict, canSubmit, locked }: DecisionStatus) => {
+    element.classList.toggle('decision-locked', locked);
     for (const choice of buttons) {
       choice.button.disabled = locked;
       choice.button.setAttribute('aria-pressed', String(verdict === choice.verdict));
     }
     submit.disabled = locked || !canSubmit;
-    hint.textContent = locked ? '本份裁决已锁定，请查看反馈后继续。'
+    const instruction = locked ? '本份裁决已锁定，请查看反馈后继续。'
       : !verdict ? '先选择一种裁决，再提交。'
         : verdict !== 'approve' && !canSubmit ? '要求修改或拒绝，至少选择一项证据才能提交。'
           : '提交后推进 90 分钟，裁决将锁定。';
+    hint.textContent = `${verdict ? `已选裁决：${verdictLabels[verdict]}。` : ''}${instruction}`;
   };
   element.append(choices, hint, submit);
   update(initial);

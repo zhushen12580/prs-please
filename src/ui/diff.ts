@@ -17,7 +17,8 @@ export function createDiff(files: readonly DiffFile[], selection: EvidenceSelect
   heading.textContent = '统一差异';
   const legend = document.createElement('p');
   legend.className = 'field-hint';
-  legend.textContent = '+ 新增 · − 删除 · · 上下文；所有行均可选为证据。';
+  legend.id = 'diff-hint';
+  legend.textContent = '+ 新增 · − 删除 · · 上下文；所有行均可选为证据。长代码可左右滚动，聚焦代码区后也可使用左右方向键。';
   diff.append(heading, legend);
 
   for (const file of files) {
@@ -31,6 +32,7 @@ export function createDiff(files: readonly DiffFile[], selection: EvidenceSelect
     scroll.tabIndex = 0;
     scroll.setAttribute('role', 'region');
     scroll.setAttribute('aria-label', `${file.path} 差异`);
+    scroll.setAttribute('aria-describedby', legend.id);
 
     const lines = document.createElement('div');
     lines.className = 'diff-lines';

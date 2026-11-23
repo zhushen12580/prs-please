@@ -1,5 +1,5 @@
 :root {
-  font-family: system-ui, sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   color: #302d29;
   background: #e9e5de;
   line-height: 1.6;
@@ -8,6 +8,10 @@
   --muted: #655f55;
   --border: #c9c2b6;
   --green: #295844;
+  --amber: #805216;
+  --red: #9b3530;
+  --paper: #fffdf7;
+  scroll-padding-block: 6rem 14rem;
 }
 
 * {
@@ -16,6 +20,8 @@
 
 body {
   margin: 0;
+  background-image: radial-gradient(#655f5518 0.6px, transparent 0.6px);
+  background-size: 8px 8px;
 }
 
 #app {
@@ -26,18 +32,23 @@ body {
 
 .app {
   width: min(48rem, calc(100% - 3rem));
+  min-width: 0;
   margin-block: 1.5rem;
   padding: clamp(1.5rem, 5vw, 3rem);
   background: #fffdf7;
   border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  box-shadow: 0 0.5rem 2rem #302d2910;
+  border-top: 4px solid var(--green);
+  border-radius: 0.25rem;
+  box-shadow: 0 5px 0 -2px #fffdf7, 0 6px 0 -2px var(--border), 0 1rem 3rem #302d2914;
+  overflow-wrap: anywhere;
 }
 
 h1 {
   margin: 0;
   font-size: clamp(2rem, 6vw, 3.5rem);
   line-height: 1.15;
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing: -0.055em;
 }
 
 p {
@@ -47,7 +58,7 @@ p {
 .app-header {
   padding-bottom: 1.5rem;
   margin-bottom: 1.5rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 3px double var(--border);
 }
 
 .home-button {
@@ -110,21 +121,28 @@ h4 {
 
 .verdicts > div {
   border: 1px solid var(--border);
-  border-top: 3px solid #655f55;
+  border-top: 3px solid currentColor;
   border-radius: 0.25rem;
   padding: 1rem;
 }
 
-.verdicts > div:first-child {
-  border-top-color: var(--green);
+.verdict-approve {
+  color: var(--green);
 }
 
-.verdicts > div:nth-child(2) {
-  border-top-color: #906018;
+.verdict-request_changes {
+  color: var(--amber);
 }
 
-.verdicts > div:last-child {
-  border-top-color: #9b3530;
+.verdict-reject {
+  color: var(--red);
+}
+
+.verdicts dt {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border: 3px double currentColor;
+  transform: rotate(-3deg);
 }
 
 dt,
@@ -148,6 +166,24 @@ button {
   font: inherit;
   min-height: 2.75rem;
   border-radius: 0.25rem;
+}
+
+button,
+a,
+input,
+[tabindex] {
+  scroll-margin-block: 6rem 14rem;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 120ms ease, box-shadow 120ms ease;
+}
+
+a {
+  color: #225b88;
+  text-underline-offset: 0.2em;
 }
 
 input {
@@ -182,6 +218,20 @@ input[aria-invalid='true'] {
 
 .primary-button:hover {
   background: #1f4535;
+}
+
+.text-button {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid transparent;
+  color: var(--green);
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+  cursor: pointer;
+}
+
+.text-button:hover {
+  background: #eaf2e7;
 }
 
 :focus-visible {
@@ -221,6 +271,33 @@ code {
   padding: clamp(1.25rem, 3vw, 2.5rem);
 }
 
+.app-workbench .app-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.25rem 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+}
+
+.app-workbench .app-header .eyebrow {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+}
+
+.app-workbench h1 {
+  grid-column: 1;
+  grid-row: 2;
+  font-size: 2.25rem;
+}
+
+.app-workbench .home-button {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: center;
+  margin: 0;
+}
+
 .review,
 .review-layout > *,
 .materials,
@@ -241,6 +318,12 @@ code {
   border-block: 1px solid var(--border);
   background: #fffdf7;
   font-weight: 700;
+}
+
+.review-toolbar > p {
+  padding: 0.15rem 0.65rem;
+  border: 1px solid var(--border);
+  background: #f0ede5;
 }
 
 .review-toolbar time {
@@ -271,6 +354,10 @@ code {
   overflow-wrap: anywhere;
 }
 
+.review-jump {
+  margin-bottom: 0.5rem;
+}
+
 .evidence-summary {
   margin-block: 0.75rem 1.25rem;
   font-weight: 700;
@@ -295,6 +382,7 @@ code {
   border-radius: 0.25rem;
   background: #f6f5ec;
   font-size: 0.9rem;
+  box-shadow: 0 2px 0 #302d2908;
 }
 
 .material-card h3 {
@@ -338,7 +426,7 @@ code {
   margin-top: 0.5rem;
   padding: 0.6rem;
   text-align: left;
-  color: inherit;
+  color: #302d29;
   background: #fffdf7;
   border: 1px solid var(--border);
   cursor: pointer;
@@ -364,6 +452,7 @@ code {
 
 .evidence-button[aria-pressed='true'] {
   box-shadow: inset 0 0 0 2px var(--green);
+  border-color: var(--green);
 }
 
 .evidence-button[aria-pressed='true'] .evidence-state {
@@ -389,7 +478,8 @@ code {
 
 .diff-scroll {
   overflow-x: auto;
-  padding: 0.3rem;
+  padding: 0.5rem;
+  overscroll-behavior-x: contain;
 }
 
 .diff-lines {
@@ -415,10 +505,15 @@ code {
 
 .diff-line {
   font: inherit;
-  min-height: 2.25rem;
+  min-height: 2.75rem;
   margin: 0;
   border: 1px solid transparent;
   border-radius: 0;
+  outline-offset: -3px;
+}
+
+.diff-line .evidence-text {
+  overflow-wrap: normal;
 }
 
 .diff-old-line,
@@ -458,6 +553,7 @@ code {
   border: 1px solid #827b70;
   border-radius: 0.5rem;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .rule-manual::backdrop {
@@ -474,6 +570,7 @@ code {
   border-radius: 0.5rem;
   overflow-y: auto;
   overflow-wrap: anywhere;
+  overscroll-behavior: contain;
 }
 
 .restart-confirm::backdrop {
@@ -531,14 +628,43 @@ code {
   margin-top: 1rem;
   padding: 0.75rem;
   border: 1px solid var(--border);
+  border-top: 3px double #827b70;
   background: #fffdf7;
-  box-shadow: 0 -0.25rem 1rem #302d2910;
+  box-shadow: 0 -0.4rem 1.25rem #302d2918;
 }
 
 .decision-choices {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.decision-choices > button {
+  min-width: 6rem;
+  border: 3px double currentColor;
+  background: var(--paper);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.decision-choices > button::before {
+  content: '○ ';
+}
+
+.decision-choices > [aria-pressed='true']::before {
+  content: '✓ ';
+}
+
+.decision-choices > .verdict-approve {
+  color: var(--green);
+}
+
+.decision-choices > .verdict-request_changes {
+  color: var(--amber);
+}
+
+.decision-choices > .verdict-reject {
+  color: var(--red);
 }
 
 .decision-panel > .field-hint {
@@ -553,14 +679,23 @@ code {
 }
 
 .decision-choices [aria-pressed='true'] {
-  border-color: var(--green);
-  box-shadow: inset 0 0 0 2px var(--green);
+  background: #f0ede5;
+  box-shadow: inset 0 0 0 1px currentColor;
   font-weight: 700;
+}
+
+.decision-locked {
+  position: static;
+  box-shadow: none;
 }
 
 button:disabled {
   cursor: default;
   opacity: 0.6;
+}
+
+.evidence-button:disabled {
+  opacity: 1;
 }
 
 .feedback,
@@ -593,6 +728,13 @@ button:disabled {
   font-weight: 700;
 }
 
+.result-outcome {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  margin-bottom: 1rem;
+  border: 3px double currentColor;
+}
+
 .result-correct {
   color: var(--green);
 }
@@ -607,8 +749,22 @@ button:disabled {
 
 .summary-statistics {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
   margin-block: 1rem;
+}
+
+.summary-statistics > p {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  background: #f6f5ec;
+}
+
+.summary-statistics > p:first-child {
+  grid-column: 1 / -1;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  color: var(--green);
+  border-block: 3px double var(--green);
 }
 
 @media (max-width: 60rem) {
@@ -630,13 +786,46 @@ button:disabled {
 
   .decision-choices > button {
     flex: 1;
-    padding-inline: 0.5rem;
+    padding-inline: 0.25rem;
+    font-size: 0.95rem;
+    letter-spacing: 0;
+    white-space: nowrap;
   }
 
   .app {
-    width: calc(100% - 1.5rem);
+    width: calc(100% - 1rem);
     margin-block: 0.75rem;
-    padding: 1.25rem;
+    padding: 1rem;
+  }
+
+  .review-toolbar {
+    gap: 0.5rem;
+    padding-block: 0.5rem;
+  }
+
+  .review-toolbar > p {
+    padding-inline: 0.4rem;
+  }
+
+  .review-toolbar .secondary-button {
+    padding-inline: 0.5rem;
+  }
+
+  .summary-statistics > p {
+    padding: 0.75rem;
+  }
+
+  .app-workbench .app-header {
+    column-gap: 0.5rem;
+  }
+
+  .app-workbench .app-header .eyebrow {
+    font-size: 0.75rem;
+    letter-spacing: 0;
+  }
+
+  .app-workbench h1 {
+    font-size: 2rem;
   }
 
   .verdicts {
@@ -655,5 +844,22 @@ button:disabled {
 
   .primary-button {
     justify-self: stretch;
+  }
+}
+
+@media (max-height: 32rem) {
+  .review-toolbar,
+  .decision-panel {
+    position: static;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
   }
 }

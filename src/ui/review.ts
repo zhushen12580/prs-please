@@ -38,12 +38,18 @@ export function createReview(options: ReviewOptions): HTMLElement {
   trigger.className = 'secondary-button';
   trigger.textContent = '规则手册';
   trigger.setAttribute('aria-haspopup', 'dialog');
+  trigger.setAttribute('aria-controls', 'rule-manual');
+  trigger.setAttribute('aria-expanded', 'false');
   const manual = createManual(rules, day);
   trigger.addEventListener('click', () => {
     manual.showModal();
+    trigger.setAttribute('aria-expanded', 'true');
     manual.focus();
   });
-  manual.addEventListener('close', () => trigger.focus());
+  manual.addEventListener('close', () => {
+    trigger.setAttribute('aria-expanded', 'false');
+    if (trigger.isConnected) trigger.focus();
+  });
   toolbar.append(dayLabel, progress, clock, trigger);
 
   const title = document.createElement('h2');
@@ -56,6 +62,8 @@ export function createReview(options: ReviewOptions): HTMLElement {
   const status = document.createElement('p');
   status.className = 'evidence-summary';
   status.setAttribute('role', 'status');
+  status.setAttribute('aria-label', '证据选择状态');
+  status.setAttribute('aria-atomic', 'true');
   const selected = new Set(options.initialEvidenceIds);
   status.textContent = `已选证据：${selected.size} 项`;
 
@@ -73,7 +81,16 @@ export function createReview(options: ReviewOptions): HTMLElement {
   const layout = document.createElement('div');
   layout.className = 'review-layout';
   layout.append(createMaterials(reviewCase, selection), createDiff(reviewCase.files, selection));
-  review.append(toolbar, title, hint, status);
+  review.append(toolbar, title);
+  if (options.decision && !options.locked) {
+    const jump = document.createElement('button');
+    jump.type = 'button';
+    jump.className = 'text-button review-jump';
+    jump.textContent = '前往裁决区';
+    jump.addEventListener('click', () => options.decision?.focus());
+    review.append(jump);
+  }
+  review.append(hint, status);
   if (options.feedback) review.append(options.feedback);
   review.append(layout);
   if (options.decision) review.append(options.decision);
