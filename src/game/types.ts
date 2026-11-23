@@ -94,7 +94,7 @@ export interface DecisionRecord {
 export interface GameState {
   readonly contentVersion: string;
   readonly seed: string;
-  readonly phase: 'briefing' | 'review' | 'feedback' | 'daySummary';
+  readonly phase: 'briefing' | 'review' | 'feedback' | 'daySummary' | 'final';
   readonly day: number;
   readonly position: number;
   readonly records: readonly DecisionRecord[];

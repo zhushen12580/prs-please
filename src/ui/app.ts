@@ -1,13 +1,13 @@
 import { campaign, cases, rules } from '../content/load';
 import { summarize } from '../game/score';
-import { canAdvanceDay, canSubmit, createGame, currentCase, transition, workTime, type GameAction } from '../game/state';
+import { canAdvanceDay, canFinishCampaign, canSubmit, createGame, currentCase, transition, workTime, type GameAction } from '../game/state';
 import type { GameState } from '../game/types';
 import { createBriefing } from './briefing';
 import { createDecision } from './decision';
 import { createFeedback } from './feedback';
 import { createHome } from './home';
 import { createReview } from './review';
-import { createDaySummary } from './summary';
+import { createDaySummary, createFinalSummary } from './summary';
 
 export function mountApp(root: HTMLElement): void {
   const main = document.createElement('main');
@@ -56,10 +56,18 @@ export function mountApp(root: HTMLElement): void {
       briefing.querySelector<HTMLHeadingElement>('h2')?.focus();
       return;
     }
+    if (state.phase === 'final') {
+      const summary = createFinalSummary(state, content);
+      view.replaceChildren(summary);
+      summary.querySelector<HTMLHeadingElement>('h2')?.focus();
+      return;
+    }
     if (state.phase === 'daySummary') {
       const day = state.day;
       const summary = createDaySummary(state, content, canAdvanceDay(state, content) ? () => {
         if (dispatch({ type: 'nextDay', day })) render();
+      } : undefined, canFinishCampaign(state, content) ? () => {
+        if (dispatch({ type: 'finishCampaign', day })) render();
       } : undefined);
       view.replaceChildren(summary);
       summary.querySelector<HTMLHeadingElement>('h2')?.focus();

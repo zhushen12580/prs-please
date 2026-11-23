@@ -33,4 +33,10 @@ export const answerKey: Record<string, ExpectedAnswer> = {
   'd4-04': { verdict: 'request_changes', evidenceSets: [['archive-skipped-test']] },
   'd4-05': { verdict: 'request_changes', evidenceSets: [['rows-exact-assertion', 'rows-vacuous-assertion']] },
   'd4-06': { verdict: 'request_changes', evidenceSets: [['ci-build-failure']] },
+  'd5-01': { verdict: 'approve', evidenceSets: [] },
+  'd5-02': { verdict: 'approve', evidenceSets: [] },
+  'd5-03': { verdict: 'reject', evidenceSets: [['diagnostic-credential-upload']] },
+  'd5-04': { verdict: 'reject', evidenceSets: [['signature-bypass']] },
+  'd5-05': { verdict: 'request_changes', evidenceSets: [['tool-labels-ai', 'disclosure']] },
+  'd5-06': { verdict: 'request_changes', evidenceSets: [['path-absolute-assertion']] },
 };

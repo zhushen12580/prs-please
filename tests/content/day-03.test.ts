@@ -7,14 +7,14 @@ import { answerKey } from '../fixtures/answer-key';
 const ids = ['d3-01', 'd3-02', 'd3-03', 'd3-04', 'd3-05', 'd3-06'];
 
 describe('第三天披露政策真实内容', () => {
-  test('第三天六题按 campaign 加载，二十四题唯一且第五天尚未加载', () => {
+  test('第三天六题按 campaign 加载，三十题唯一且第五天已加载', () => {
     const day = getDayCases(3);
     expect(day.map((item) => item.id)).toEqual(ids);
     expect(campaign.days[2]).toEqual({ day: 3, newRuleId: 'R3', caseIds: ids });
-    expect(cases).toHaveLength(24);
-    expect(new Set(cases.map((item) => item.id)).size).toBe(24);
+    expect(cases).toHaveLength(30);
+    expect(new Set(cases.map((item) => item.id)).size).toBe(30);
     expect(validateDay(day, 3, campaign, rules, 'src/data/cases/day-03.json')).toEqual(day);
-    expect(() => getDayCases(5)).toThrow(/尚未加载/);
+    expect(getDayCases(5).map((item) => item.id)).toEqual(campaign.days[4].caseIds);
   });
 
   test('两份正常、三份 R3/policy、一份 R2/bug，全部 CI 通过，答案独立锁定', () => {

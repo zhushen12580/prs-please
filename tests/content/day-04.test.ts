@@ -8,14 +8,14 @@ import { answerKey } from '../fixtures/answer-key';
 const ids = ['d4-01', 'd4-02', 'd4-03', 'd4-04', 'd4-05', 'd4-06'];
 
 describe('第四天测试完整性真实内容', () => {
-  test('六题按 campaign 加载，二十四题唯一，第五天仍未加载', () => {
+  test('六题按 campaign 加载，三十题唯一，第五天已加载', () => {
     const day = getDayCases(4);
     expect(day.map((item) => item.id)).toEqual(ids);
     expect(campaign.days[3]).toEqual({ day: 4, newRuleId: 'R4', caseIds: ids });
-    expect(cases).toHaveLength(24);
-    expect(new Set(cases.map((item) => item.id)).size).toBe(24);
+    expect(cases).toHaveLength(30);
+    expect(new Set(cases.map((item) => item.id)).size).toBe(30);
     expect(validateDay(day, 4, campaign, rules, 'src/data/cases/day-04.json')).toEqual(day);
-    expect(() => getDayCases(5)).toThrow(/尚未加载/);
+    expect(getDayCases(5).map((item) => item.id)).toEqual(campaign.days[4].caseIds);
   });
 
   test('两份正常、三份 R4/bug、一份 R1/bug，只有构建失败题 CI 失败，独立答案均满分', () => {

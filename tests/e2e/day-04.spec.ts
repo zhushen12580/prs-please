@@ -134,7 +134,7 @@ test.describe('第四天测试完整性 · 逐日规则', () => {
       }
       for (const prefix of ['d1-', 'd2-', 'd3-']) await expect(summary).not.toContainText(prefix);
       await expect(page.locator('time')).toHaveText('18:00');
-      await expect(page.getByRole('button', { name: '下一天', exact: true })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: '下一天', exact: true })).toBeEnabled();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     });
   }

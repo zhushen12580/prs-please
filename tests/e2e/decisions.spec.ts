@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { answerKey } from '../fixtures/answer-key';
 import { nextReview, startReview, submitDecision } from './helpers/play';
+import { campaignOrders, reachFifthDay } from './helpers/campaign';
 
 test.describe('第一天裁决反馈 · 证据与三种裁决', () => {
   test('默认无裁决，两种非批准禁空证据，批准可无证据；反馈锁定且重复点击不计分', async ({ page }) => {
@@ -113,4 +114,51 @@ test.describe('第一天裁决反馈 · 证据与三种裁决', () => {
       await expect(page.getByText('误伤好 PR：0', { exact: true })).toBeVisible();
     }
   });
+});
+
+test('证据与三种裁决 · 第五天：后门必须拒绝，错证据 5 分、普通返修 0 分且提交锁定', async ({ page }) => {
+  await reachFifthDay(page);
+  for (const [index, id] of campaignOrders['maintainer-001'][4].entries()) {
+    await expect(page.getByRole('heading', { name: new RegExp(`^PR ${id}`) })).toBeVisible();
+    const answer = answerKey[id];
+    if (id === 'd5-04') {
+      const submit = page.getByRole('button', { name: '提交裁决', exact: true });
+      await page.getByRole('button', { name: '拒绝', exact: true }).click();
+      await expect(submit).toBeDisabled();
+      await page.locator('[data-evidence-id="ci-signature"]').click();
+      await expect(submit).toBeEnabled();
+      await submit.evaluate((button) => {
+        button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      });
+      const feedback = page.getByRole('region', { name: '裁决反馈', exact: true });
+      await expect(feedback).toContainText('本题得分：5/10');
+      await expect(feedback).toContainText('裁决正确，但证据不完整或含无关项');
+      await expect(feedback).toContainText('signature-bypass');
+      await expect(page.getByText('累计得分：245 分', { exact: true })).toBeVisible();
+      await expect(page.locator('time')).toHaveText('10:30');
+      await expect(submit).toBeDisabled();
+      await expect(page.getByRole('button', { name: '拒绝', exact: true })).toBeDisabled();
+      await expect(page.locator('[data-evidence-id="signature-bypass"]')).toBeDisabled();
+    } else {
+      await submitDecision(page, id === 'd5-03' ? 'request_changes' : answer.verdict, answer.evidenceSets[0] ?? []);
+      const feedback = page.getByRole('region', { name: '裁决反馈', exact: true });
+      await expect(feedback).toContainText(`本题得分：${id === 'd5-03' ? 0 : 10}/10`);
+      if (id === 'd5-03') {
+        await expect(feedback).toContainText('裁决错误');
+        await expect(feedback).toContainText('你的裁决：要求修改');
+        await expect(feedback).toContainText('标准裁决：拒绝');
+      }
+    }
+    if (index < 5) await nextReview(page);
+  }
+  await page.getByRole('button', { name: '查看日结', exact: true }).click();
+  await expect(page.getByText('当日得分：45/60', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '查看最终成绩', exact: true }).click();
+  const final = page.getByRole('region', { name: '最终成绩', exact: true });
+  await expect(final).toContainText('总得分：285/300');
+  await expect(final.getByRole('article')).toHaveCount(30);
+  const record = final.getByRole('article').filter({ has: page.getByRole('heading', { name: /^PR d5-03/ }) });
+  await expect(record).toContainText('你的裁决：要求修改');
+  await expect(record).toContainText('本题得分：0/10');
 });

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { campaign, cases, rules } from '../../src/content/load';
-import { canAdvanceDay, canSubmit, createGame, currentCase, transition, workTime } from '../../src/game/state';
+import { canAdvanceDay, canFinishCampaign, canSubmit, createGame, currentCase, transition, workTime } from '../../src/game/state';
 import { summarize } from '../../src/game/score';
 import type { GameState, Verdict } from '../../src/game/types';
 import { answerKey } from '../fixtures/answer-key';
@@ -92,6 +92,68 @@ describe('第一天纯状态机', () => {
     expect(act(state, { type: 'next', caseId: 'd1-01' })).toBe(state);
     expect(act(state, { type: 'submit', caseId: 'd1-01' })).toBe(state);
     expect(act(state, { type: 'startReview' })).toBe(state);
+  });
+});
+
+describe('第五天日结与最终阶段', () => {
+  test('三十题逐日完成，最后反馈仍先进入日结，明确操作后才进入锁定的最终页', () => {
+    const orders = [
+      ['d1-02', 'd1-05', 'd1-04', 'd1-06', 'd1-03', 'd1-01'],
+      ['d2-01', 'd2-02', 'd2-03', 'd2-04', 'd2-05', 'd2-06'],
+      ['d3-05', 'd3-01', 'd3-02', 'd3-03', 'd3-06', 'd3-04'],
+      ['d4-02', 'd4-06', 'd4-04', 'd4-05', 'd4-01', 'd4-03'],
+      ['d5-04', 'd5-01', 'd5-03', 'd5-06', 'd5-05', 'd5-02'],
+    ];
+    let state = createGame('maintainer-001', content);
+    for (const [dayIndex, ids] of orders.entries()) {
+      expect(state).toMatchObject({ phase: 'briefing', day: dayIndex + 1, position: 0 });
+      expect(workTime(state, content)).toBe('09:00');
+      expect(act(state, { type: 'finishCampaign', day: state.day })).toBe(state);
+      state = act(state, { type: 'startReview' });
+      for (const [index, id] of ids.entries()) {
+        expect(currentCase(state, content).id).toBe(id);
+        expect(canFinishCampaign(state, content)).toBe(false);
+        expect(act(state, { type: 'finishCampaign', day: state.day })).toBe(state);
+        const answer = answerKey[id];
+        state = act(state, { type: 'selectVerdict', verdict: answer.verdict });
+        state = act(state, { type: 'selectEvidence', evidenceIds: answer.evidenceSets[0] ?? [] });
+        state = act(state, { type: 'submit', caseId: id });
+        expect(state.phase).toBe('feedback');
+        expect(state.records).toHaveLength(dayIndex * 6 + index + 1);
+        expect(workTime(state, content)).toBe(times[index]);
+        expect(act(state, { type: 'finishCampaign', day: state.day })).toBe(state);
+        expect(act(state, { type: 'submit', caseId: id })).toBe(state);
+        state = act(state, { type: 'next', caseId: id });
+      }
+      expect(state.phase).toBe('daySummary');
+      expect(canFinishCampaign(state, content)).toBe(dayIndex === 4);
+      expect(canAdvanceDay(state, content)).toBe(dayIndex < 4);
+      if (dayIndex < 4) {
+        expect(act(state, { type: 'finishCampaign', day: state.day })).toBe(state);
+        state = act(state, { type: 'nextDay', day: state.day });
+      }
+    }
+    expect(new Set(state.records.map((record) => record.caseId)).size).toBe(30);
+    expect(summarize(state.records, content).points).toBe(300);
+    expect(act(state, { type: 'nextDay', day: 5 })).toBe(state);
+    expect(act(state, { type: 'finishCampaign', day: 4 })).toBe(state);
+    const incomplete = { ...state, records: state.records.filter((record) => record.caseId !== 'd1-02') };
+    expect(canFinishCampaign(incomplete, content)).toBe(false);
+    expect(act(incomplete, { type: 'finishCampaign', day: 5 })).toBe(incomplete);
+    // 允许答错后通关，结束条件只检查已完成的案例。
+    const mistaken = { ...state, records: state.records.map((record) => record.caseId === 'd5-04'
+      ? { ...record, verdict: 'approve' as const } : record) };
+    expect(act(mistaken, { type: 'finishCampaign', day: 5 }).phase).toBe('final');
+    const final = act(state, { type: 'finishCampaign', day: 5 });
+    expect(final).toMatchObject({ phase: 'final', day: 5, position: 5, draft: { verdict: null, evidenceIds: [] } });
+    expect(final.records).toEqual(state.records);
+    expect(canFinishCampaign(final, content)).toBe(false);
+    expect(canAdvanceDay(final, content)).toBe(false);
+    for (const action of [
+      { type: 'finishCampaign', day: 5 }, { type: 'nextDay', day: 5 }, { type: 'startReview' },
+      { type: 'submit', caseId: 'd5-02' }, { type: 'next', caseId: 'd5-02' },
+      { type: 'selectVerdict', verdict: 'approve' }, { type: 'selectEvidence', evidenceIds: [] },
+    ] as const) expect(act(final, action)).toBe(final);
   });
 });
 

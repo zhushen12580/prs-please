@@ -4,18 +4,20 @@ import dayOne from '../data/cases/day-01.json';
 import dayTwo from '../data/cases/day-02.json';
 import dayThree from '../data/cases/day-03.json';
 import dayFour from '../data/cases/day-04.json';
+import dayFive from '../data/cases/day-05.json';
 import { parseCampaign, parseRules, validateDay } from './validate';
 import type { ReviewCase } from '../game/types';
 
 export const campaign = parseCampaign(rawCampaign);
 export const rules = parseRules(rawRules);
 
-// 只登记已经完成的真实内容；未来关卡由后续任务逐日加入。
+// 登记各日真实内容，并沿用逐日结构校验。
 const loadedDays = new Map<number, ReviewCase[]>([
   [1, validateDay(dayOne, 1, campaign, rules, 'src/data/cases/day-01.json')],
   [2, validateDay(dayTwo, 2, campaign, rules, 'src/data/cases/day-02.json')],
   [3, validateDay(dayThree, 3, campaign, rules, 'src/data/cases/day-03.json')],
   [4, validateDay(dayFour, 4, campaign, rules, 'src/data/cases/day-04.json')],
+  [5, validateDay(dayFive, 5, campaign, rules, 'src/data/cases/day-05.json')],
 ]);
 
 export const cases = [...loadedDays.values()].flat();
