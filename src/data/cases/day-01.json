@@ -1,0 +1,311 @@
+[
+  {
+    "id": "d1-01",
+    "title": "修复分页末端少返回一项",
+    "description": {
+      "summary": "虚构项目「纸舟看板」的列表页每页少一条。约定页码从 1 开始，页码和页容量均为正整数。本补丁只修正切片的排他结束位置，保留越界页返回空数组的行为，并补充整页、尾页和越界页测试。",
+      "disclosure": { "id": "disclosure", "text": "未使用 AI 辅助；根据最小复现手工修复。" }
+    },
+    "contributor": {
+      "name": "苏棠（虚构）",
+      "handle": "paper-sail-fictional",
+      "toolRecords": [{ "id": "tool-editor", "text": "虚构投稿工具记录：本地编辑器手工改动，附带分页回归用例。" }]
+    },
+    "ci": {
+      "status": "passed",
+      "logs": [
+        { "id": "ci-pagination", "text": "PASS page.test.ts：整页 3 项、尾页 1 项、越界页 0 项，3/3 通过。" },
+        { "id": "ci-checks", "text": "PASS 类型检查与完整测试；进程退出码 0。" }
+      ]
+    },
+    "files": [
+      {
+        "path": "src/page.ts",
+        "lines": [
+          { "id": "page-function", "kind": "context", "oldLine": 1, "newLine": 1, "text": "export function page<T>(" },
+          { "id": "page-items", "kind": "context", "oldLine": 2, "newLine": 2, "text": "  items: readonly T[]," },
+          { "id": "page-number", "kind": "context", "oldLine": 3, "newLine": 3, "text": "  pageNumber: number," },
+          { "id": "page-size", "kind": "context", "oldLine": 4, "newLine": 4, "text": "  pageSize: number," },
+          { "id": "page-return-type", "kind": "context", "oldLine": 5, "newLine": 5, "text": "): T[] {" },
+          { "id": "page-start", "kind": "context", "oldLine": 6, "newLine": 6, "text": "  const start = (pageNumber - 1) * pageSize;" },
+          { "id": "page-old-end", "kind": "delete", "oldLine": 7, "newLine": null, "text": "  return items.slice(start, start + pageSize - 1);" },
+          { "id": "page-fixed-end", "kind": "add", "oldLine": null, "newLine": 7, "text": "  return items.slice(start, start + pageSize);" },
+          { "id": "page-close", "kind": "context", "oldLine": 8, "newLine": 8, "text": "}" }
+        ]
+      },
+      {
+        "path": "tests/page.test.ts",
+        "lines": [
+          { "id": "page-test-import", "kind": "add", "oldLine": null, "newLine": 1, "text": "import { expect, test } from 'vitest';" },
+          { "id": "page-subject-import", "kind": "add", "oldLine": null, "newLine": 2, "text": "import { page } from '../src/page';" },
+          { "id": "page-test-open", "kind": "add", "oldLine": null, "newLine": 3, "text": "test('完整页、尾页和越界页', () => {" },
+          { "id": "page-test-data", "kind": "add", "oldLine": null, "newLine": 4, "text": "  const items = ['A', 'B', 'C', 'D'];" },
+          { "id": "page-test-full", "kind": "add", "oldLine": null, "newLine": 5, "text": "  expect(page(items, 1, 3)).toEqual(['A', 'B', 'C']);" },
+          { "id": "page-test-tail", "kind": "add", "oldLine": null, "newLine": 6, "text": "  expect(page(items, 2, 3)).toEqual(['D']);" },
+          { "id": "page-test-beyond", "kind": "add", "oldLine": null, "newLine": 7, "text": "  expect(page(items, 3, 3)).toEqual([]);" },
+          { "id": "page-test-close", "kind": "add", "oldLine": null, "newLine": 8, "text": "});" }
+        ]
+      }
+    ],
+    "finding": null,
+    "approvalExplanation": "CI 全部通过，满足 R1。slice 的结束索引不包含在结果中，去掉多减的 1 后整页返回三项；尾页和越界页的断言也被保留。改动和说明一致，可以批准。",
+    "sources": [{
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/slice",
+      "theme": "切片排他结束索引与边界回归",
+      "note": "借鉴 slice 的公开语义；纸舟看板、人物、补丁和日志均为原创虚构，不复制真实补丁。"
+    }]
+  },
+  {
+    "id": "d1-02",
+    "title": "为标签转义合理增加测试覆盖",
+    "description": {
+      "summary": "虚构项目「字签」原有转义函数和普通文本测试不变。本次增加空串、与号、看似 HTML 的标签和中文用例，核对标签被当作文字转义。这里只是增加有效断言，没有跳过或删除旧用例。",
+      "disclosure": { "id": "disclosure", "text": "未使用 AI 辅助；用例由贡献者手工整理。" }
+    },
+    "contributor": {
+      "name": "岑雨（虚构）",
+      "handle": "label-lantern-fictional",
+      "toolRecords": [{ "id": "tool-tests", "text": "虚构投稿工具记录：手工补充标签转义的边界用例，未修改生产函数。" }]
+    },
+    "ci": {
+      "status": "passed",
+      "logs": [
+        { "id": "ci-label-tests", "text": "PASS escape-label.test.ts：原普通文本用例与新增四个边界断言均通过。" },
+        { "id": "ci-checks", "text": "PASS 完整测试与类型检查；进程退出码 0。" }
+      ]
+    },
+    "files": [
+      {
+        "path": "src/escape-label.ts",
+        "lines": [
+          { "id": "label-function", "kind": "context", "oldLine": 1, "newLine": 1, "text": "export function escapeLabel(text: string): string {" },
+          { "id": "label-return", "kind": "context", "oldLine": 2, "newLine": 2, "text": "  return text.replaceAll('&', '&amp;')" },
+          { "id": "label-less", "kind": "context", "oldLine": 3, "newLine": 3, "text": "    .replaceAll('<', '&lt;')" },
+          { "id": "label-greater", "kind": "context", "oldLine": 4, "newLine": 4, "text": "    .replaceAll('>', '&gt;');" },
+          { "id": "label-function-close", "kind": "context", "oldLine": 5, "newLine": 5, "text": "}" }
+        ]
+      },
+      {
+        "path": "tests/escape-label.test.ts",
+        "lines": [
+          { "id": "label-import", "kind": "context", "oldLine": 1, "newLine": 1, "text": "import { expect, test } from 'vitest';" },
+          { "id": "label-subject-import", "kind": "context", "oldLine": 2, "newLine": 2, "text": "import { escapeLabel } from '../src/escape-label';" },
+          { "id": "label-existing-open", "kind": "context", "oldLine": 3, "newLine": 3, "text": "test('普通文本', () => {" },
+          { "id": "label-existing-assert", "kind": "context", "oldLine": 4, "newLine": 4, "text": "  expect(escapeLabel('todo')).toBe('todo');" },
+          { "id": "label-existing-close", "kind": "context", "oldLine": 5, "newLine": 5, "text": "});" },
+          { "id": "label-new-open", "kind": "add", "oldLine": null, "newLine": 6, "text": "test('标签边界', () => {" },
+          { "id": "label-empty-test", "kind": "add", "oldLine": null, "newLine": 7, "text": "  expect(escapeLabel('')).toBe('');" },
+          { "id": "label-amp-test", "kind": "add", "oldLine": null, "newLine": 8, "text": "  expect(escapeLabel('A&B')).toBe('A&amp;B');" },
+          { "id": "label-html-test", "kind": "add", "oldLine": null, "newLine": 9, "text": "  expect(escapeLabel('<strong>重点</strong>')).toBe('&lt;strong&gt;重点&lt;/strong&gt;');" },
+          { "id": "label-chinese-test", "kind": "add", "oldLine": null, "newLine": 10, "text": "  expect(escapeLabel('待办')).toBe('待办');" },
+          { "id": "label-new-close", "kind": "add", "oldLine": null, "newLine": 11, "text": "});" }
+        ]
+      }
+    ],
+    "finding": null,
+    "approvalExplanation": "CI 通过，满足 R1。已有普通文本断言原样保留，新增断言核对具体输出，确实扩大覆盖。修改测试本身没有问题，不能因此误伤正常贡献；可以批准。",
+    "sources": [{
+      "url": "https://curl.se/dev/contribute.html",
+      "theme": "用有效测试验证贡献，而非仅依赖提交说明",
+      "note": "借鉴贡献指南重视测试验证的主题；字签、人物、代码和日志均为原创虚构。本游戏规则是虚构项目规则，不冒充 curl 的完整政策。"
+    }]
+  },
+  {
+    "id": "d1-03",
+    "title": "修复列表键盘交互并披露 AI 辅助",
+    "description": {
+      "summary": "虚构项目「折页清单」使用可聚焦的自定义列表项，Enter 或空格应切换完成状态。现有代码只响应 Enter，补丁增加空格并阻止页面随空格滚动。点击处理在别处保持不变，附带的键盘回归测试已通过。",
+      "disclosure": { "id": "disclosure", "text": "使用 AI 辅助讨论键盘事件分支；贡献者逐行检查并手工验证 Enter、空格和方向键。" }
+    },
+    "contributor": {
+      "name": "叶澄（虚构）",
+      "handle": "folded-list-fictional",
+      "toolRecords": [{ "id": "tool-ai-session", "text": "虚构投稿工具记录：明确使用 AI 辅助梳理按键条件，披露栏已说明；本地测试由贡献者执行。" }]
+    },
+    "ci": {
+      "status": "passed",
+      "logs": [
+        { "id": "ci-keyboard", "text": "PASS keyboard.test.ts：Enter 与空格各切换一次，空格阻止默认动作，方向键不切换。" },
+        { "id": "ci-checks", "text": "PASS 类型检查与完整测试；进程退出码 0。" }
+      ]
+    },
+    "files": [{
+      "path": "src/keyboard.ts",
+      "lines": [
+        { "id": "key-function", "kind": "context", "oldLine": 1, "newLine": 1, "text": "export function onItemKey(" },
+        { "id": "key-event", "kind": "context", "oldLine": 2, "newLine": 2, "text": "  event: KeyboardEvent," },
+        { "id": "key-callback", "kind": "context", "oldLine": 3, "newLine": 3, "text": "  toggle: () => void," },
+        { "id": "key-open", "kind": "context", "oldLine": 4, "newLine": 4, "text": "): void {" },
+        { "id": "key-repeat", "kind": "context", "oldLine": 5, "newLine": 5, "text": "  if (event.repeat) return;" },
+        { "id": "key-old-condition", "kind": "delete", "oldLine": 6, "newLine": null, "text": "  if (event.key === 'Enter') {" },
+        { "id": "key-new-condition", "kind": "add", "oldLine": null, "newLine": 6, "text": "  if (event.key === 'Enter' || event.key === ' ') {" },
+        { "id": "key-prevent-scroll", "kind": "add", "oldLine": null, "newLine": 7, "text": "    event.preventDefault();" },
+        { "id": "key-toggle", "kind": "context", "oldLine": 7, "newLine": 8, "text": "    toggle();" },
+        { "id": "key-branch-close", "kind": "context", "oldLine": 8, "newLine": 9, "text": "  }" },
+        { "id": "key-close", "kind": "context", "oldLine": 9, "newLine": 10, "text": "}" },
+        { "id": "key-blank", "kind": "context", "oldLine": 10, "newLine": 11, "text": "" },
+        { "id": "key-binding-note", "kind": "context", "oldLine": 11, "newLine": 12, "text": "// 绑定在带 role=checkbox、tabIndex=0 的列表项上。" }
+      ]
+    }],
+    "finding": null,
+    "approvalExplanation": "CI 通过，满足第一天生效的 R1。空格分支补齐预期交互且阻止默认滚动，已有 Enter 和长按保护仍在。AI 辅助事实已经明确披露，不能仅因使用 AI 而拒绝合规贡献；可以批准。",
+    "sources": [{
+      "url": "https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key",
+      "theme": "用可见按键语义检查键盘交互",
+      "note": "借鉴键盘事件的 Enter 与空格语义；折页清单、人物、代码和日志均为原创虚构，不复制真实补丁，也不推断真实作者是否使用 AI。"
+    }]
+  },
+  {
+    "id": "d1-04",
+    "title": "日期序列化改动留下时区测试失败",
+    "description": {
+      "summary": "虚构项目「晨间账簿」约定将年月日序列化为 UTC 零点的 ISO 时间。贡献者为了简化日期构造删除 UTC 调用，却在 UTC+08:00 的 CI 作业里留下日期回退问题。请核对附带的时区矩阵日志。",
+      "disclosure": { "id": "disclosure", "text": "未使用 AI 辅助；手工整理日期构造代码。" }
+    },
+    "contributor": {
+      "name": "顾宁（虚构）",
+      "handle": "morning-ledger-fictional",
+      "toolRecords": [{ "id": "tool-date-edit", "text": "虚构投稿工具记录：手工替换日期构造表达式，上传了 CI 时区矩阵结果。" }]
+    },
+    "ci": {
+      "status": "failed",
+      "logs": [
+        { "id": "ci-timezone-setup", "text": "RUN 日期序列化时区矩阵：TZ=Etc/UTC 与 TZ=Asia/Shanghai（UTC+08:00）。" },
+        { "id": "ci-timezone-failure", "text": "FAIL utc-date.test.ts / UTC+08:00 时区：serializeDay(2026, 1, 2) 期望 2026-01-02T00:00:00.000Z，实际 2026-01-01T16:00:00.000Z；作业退出码 1。" }
+      ]
+    },
+    "files": [{
+      "path": "src/serialize-day.ts",
+      "lines": [
+        { "id": "date-contract", "kind": "context", "oldLine": 1, "newLine": 1, "text": "// 输出约定：指定日期的 UTC 零点，与机器时区无关。" },
+        { "id": "date-function", "kind": "context", "oldLine": 2, "newLine": 2, "text": "export function serializeDay(" },
+        { "id": "date-year", "kind": "context", "oldLine": 3, "newLine": 3, "text": "  year: number," },
+        { "id": "date-month", "kind": "context", "oldLine": 4, "newLine": 4, "text": "  month: number," },
+        { "id": "date-day", "kind": "context", "oldLine": 5, "newLine": 5, "text": "  day: number," },
+        { "id": "date-return", "kind": "context", "oldLine": 6, "newLine": 6, "text": "): string {" },
+        { "id": "date-old-utc", "kind": "delete", "oldLine": 7, "newLine": null, "text": "  const date = new Date(Date.UTC(year, month - 1, day));" },
+        { "id": "date-new-local", "kind": "add", "oldLine": null, "newLine": 7, "text": "  const date = new Date(year, month - 1, day);" },
+        { "id": "date-iso", "kind": "context", "oldLine": 8, "newLine": 8, "text": "  return date.toISOString();" },
+        { "id": "date-close", "kind": "context", "oldLine": 9, "newLine": 9, "text": "}" },
+        { "id": "date-blank", "kind": "context", "oldLine": 10, "newLine": 10, "text": "" },
+        { "id": "date-example", "kind": "context", "oldLine": 11, "newLine": 11, "text": "// serializeDay(2026, 1, 2) 应始终以 2026-01-02T00:00 开头。" }
+      ]
+    }],
+    "finding": {
+      "ruleId": "R1",
+      "impact": "bug",
+      "evidenceSets": [["ci-timezone-failure"]],
+      "explanation": "时区回归作业明确失败且退出码为 1，单独这一条日志就足以证明 R1 未满足，应要求修改。diff 解释了失败原因：本地零点被转成 UTC 后提前了八小时。失败可修复，不是拒绝贡献的理由。"
+    },
+    "sources": [{
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC",
+      "theme": "UTC 与本地日期构造的时区边界",
+      "note": "借鉴 UTC 与本地时间的公开语义；晨间账簿、人物、补丁、用例和 CI 日志均为原创虚构，不复制真实提交。"
+    }]
+  },
+  {
+    "id": "d1-05",
+    "title": "阅读时长格式化导致类型检查失败",
+    "description": {
+      "summary": "虚构项目「书灯」希望把阅读时长显示为两位小数。补丁在仍声明返回 number 的计算函数里直接调用 toFixed，返回了 string。界面格式化应放在哪里可以返修讨论，但当前类型检查已明确失败。",
+      "disclosure": { "id": "disclosure", "text": "未使用 AI 辅助；手工添加小数位格式化。" }
+    },
+    "contributor": {
+      "name": "程墨（虚构）",
+      "handle": "reading-lamp-fictional",
+      "toolRecords": [{ "id": "tool-format-edit", "text": "虚构投稿工具记录：手工更改数值函数，保留原 number 返回类型。" }]
+    },
+    "ci": {
+      "status": "failed",
+      "logs": [
+        { "id": "ci-type-start", "text": "RUN tsc --noEmit：严格类型检查已启用。" },
+        { "id": "ci-type-failure", "text": "FAIL src/reading-minutes.ts(7,3) TS2322: Type 'string' is not assignable to type 'number'. 类型检查进程退出码 2。" }
+      ]
+    },
+    "files": [{
+      "path": "src/reading-minutes.ts",
+      "lines": [
+        { "id": "minutes-contract", "kind": "context", "oldLine": 1, "newLine": 1, "text": "// 计算结果仍用于数值排序；输入是非负字数与正阅读速率。" },
+        { "id": "minutes-function", "kind": "context", "oldLine": 2, "newLine": 2, "text": "export function readingMinutes(" },
+        { "id": "minutes-words", "kind": "context", "oldLine": 3, "newLine": 3, "text": "  words: number," },
+        { "id": "minutes-rate", "kind": "context", "oldLine": 4, "newLine": 4, "text": "  wordsPerMinute: number," },
+        { "id": "minutes-type", "kind": "context", "oldLine": 5, "newLine": 5, "text": "): number {" },
+        { "id": "minutes-calculate", "kind": "context", "oldLine": 6, "newLine": 6, "text": "  const minutes = words / wordsPerMinute;" },
+        { "id": "minutes-old-return", "kind": "delete", "oldLine": 7, "newLine": null, "text": "  return minutes;" },
+        { "id": "minutes-string-return", "kind": "add", "oldLine": null, "newLine": 7, "text": "  return minutes.toFixed(2);" },
+        { "id": "minutes-close", "kind": "context", "oldLine": 8, "newLine": 8, "text": "}" },
+        { "id": "minutes-blank", "kind": "context", "oldLine": 9, "newLine": 9, "text": "" },
+        { "id": "minutes-consumer", "kind": "context", "oldLine": 10, "newLine": 10, "text": "export function compareReadingTime(a: number, b: number): number {" },
+        { "id": "minutes-sort", "kind": "context", "oldLine": 11, "newLine": 11, "text": "  return a - b;" },
+        { "id": "minutes-consumer-close", "kind": "context", "oldLine": 12, "newLine": 12, "text": "}" }
+      ]
+    }],
+    "finding": {
+      "ruleId": "R1",
+      "impact": "bug",
+      "evidenceSets": [["ci-type-failure"]],
+      "explanation": "TS2322 日志明确表明类型检查失败，违反 R1，应要求修改后重审。toFixed 返回字符串，而函数仍承诺返回数字；本题依据可见的失败 CI 裁决，不需要使用尚未解锁的 API 规则。"
+    },
+    "sources": [{
+      "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html",
+      "theme": "数值与字符串类型不应混淆",
+      "note": "借鉴 TypeScript 的基本类型区分；书灯、人物、代码和编译日志均为原创虚构，不复制真实补丁。"
+    }]
+  },
+  {
+    "id": "d1-06",
+    "title": "搜索词清理留下空输入回归失败",
+    "description": {
+      "summary": "虚构项目「小笺索引」约定纯空白输入产生零个搜索词。补丁去掉空串过滤后，空输入变成了含一个空字符串的数组。普通双词测试仍通过，但已有空输入回归用例失败，不能只看局部成功日志。",
+      "disclosure": { "id": "disclosure", "text": "未使用 AI 辅助；手工简化分词链。" }
+    },
+    "contributor": {
+      "name": "陆禾（虚构）",
+      "handle": "note-index-fictional",
+      "toolRecords": [{ "id": "tool-search-edit", "text": "虚构投稿工具记录：手工缩短分词表达式，没有修改或删除测试。" }]
+    },
+    "ci": {
+      "status": "failed",
+      "logs": [
+        { "id": "ci-words-pass", "text": "PASS search-terms.test.ts / 双词：输入 'paper boat' 返回 ['paper', 'boat']。" },
+        { "id": "ci-empty-failure", "text": "FAIL search-terms.test.ts / 空输入：输入 '   ' 期望 []，实际 ['']；完整测试作业退出码 1。" }
+      ]
+    },
+    "files": [
+      {
+        "path": "src/search-terms.ts",
+        "lines": [
+          { "id": "search-contract", "kind": "context", "oldLine": 1, "newLine": 1, "text": "// 空白输入没有搜索词，调用者据此显示全部条目。" },
+          { "id": "search-function", "kind": "context", "oldLine": 2, "newLine": 2, "text": "export function searchTerms(input: string): string[] {" },
+          { "id": "search-old-filter", "kind": "delete", "oldLine": 3, "newLine": null, "text": "  return input.trim().split(/\\s+/).filter(Boolean);" },
+          { "id": "search-new-split", "kind": "add", "oldLine": null, "newLine": 3, "text": "  return input.trim().split(/\\s+/);" },
+          { "id": "search-close", "kind": "context", "oldLine": 4, "newLine": 4, "text": "}" }
+        ]
+      },
+      {
+        "path": "tests/search-terms.test.ts",
+        "lines": [
+          { "id": "search-test-import", "kind": "context", "oldLine": 1, "newLine": 1, "text": "import { expect, test } from 'vitest';" },
+          { "id": "search-subject-import", "kind": "context", "oldLine": 2, "newLine": 2, "text": "import { searchTerms } from '../src/search-terms';" },
+          { "id": "search-words-open", "kind": "context", "oldLine": 3, "newLine": 3, "text": "test('双词', () => {" },
+          { "id": "search-words-assert", "kind": "context", "oldLine": 4, "newLine": 4, "text": "  expect(searchTerms('paper boat')).toEqual(['paper', 'boat']);" },
+          { "id": "search-words-close", "kind": "context", "oldLine": 5, "newLine": 5, "text": "});" },
+          { "id": "search-empty-open", "kind": "context", "oldLine": 6, "newLine": 6, "text": "test('空输入', () => {" },
+          { "id": "search-empty-assert", "kind": "context", "oldLine": 7, "newLine": 7, "text": "  expect(searchTerms('   ')).toEqual([]);" },
+          { "id": "search-empty-close", "kind": "context", "oldLine": 8, "newLine": 8, "text": "});" }
+        ]
+      }
+    ],
+    "finding": {
+      "ruleId": "R1",
+      "impact": "bug",
+      "evidenceSets": [["ci-empty-failure"]],
+      "explanation": "完整测试作业中的空输入回归失败，日志显示期望和实际不同且退出码为 1，足以证明违反 R1。普通双词测试通过不能抵消失败；应要求修改以恢复空输入行为。测试完整保留，本题没有削弱测试的问题。"
+    },
+    "sources": [{
+      "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/trim",
+      "theme": "空白清理后的空字符串边界",
+      "note": "借鉴 trim 的空白清理语义；小笺索引、人物、补丁、回归断言和 CI 日志均为原创虚构，不复制真实补丁。"
+    }]
+  }
+]

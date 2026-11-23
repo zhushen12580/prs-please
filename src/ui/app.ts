@@ -1,4 +1,4 @@
-import rules from '../data/rules.json';
+import { rules } from '../content/load';
 import { createBriefing } from './briefing';
 import { createHome } from './home';
 
