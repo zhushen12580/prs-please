@@ -33,8 +33,8 @@ function evidenceList(ids: readonly string[], descriptions: ReadonlyMap<string, 
   return list;
 }
 
-// 反馈与日结复盘共用解释视图，所有题库文本保持为文本节点。
-export function createResultDetails(reviewCase: ReviewCase, record: DecisionRecord, day: number, rules: readonly Rule[]): HTMLElement {
+// 反馈、日结和最终复盘共用解释视图，所有题库文本保持为文本节点。
+export function createResultDetails(reviewCase: ReviewCase, record: DecisionRecord, day: number, rules: readonly Rule[], headingTag: 'h3' | 'h4' = 'h3'): HTMLElement {
   const details = document.createElement('div');
   details.className = 'result-details';
   const score = scoreDecision(reviewCase, rules, day, record);
@@ -47,7 +47,7 @@ export function createResultDetails(reviewCase: ReviewCase, record: DecisionReco
   const active = activeRules(rules, day);
   const applicable = active.find((rule) => rule.id === reviewCase.finding?.ruleId);
   details.append(paragraph(applicable ? `适用规则：${applicable.id} · ${applicable.title}` : '本题无生效违规，批准无需证据。'));
-  const rulesHeading = document.createElement('h3');
+  const rulesHeading = document.createElement(headingTag);
   rulesHeading.textContent = '生效规则';
   const ruleList = document.createElement('ul');
   for (const rule of active) {
@@ -58,10 +58,10 @@ export function createResultDetails(reviewCase: ReviewCase, record: DecisionReco
   details.append(rulesHeading, ruleList);
 
   const descriptions = evidenceDescriptions(reviewCase);
-  const selectedHeading = document.createElement('h3');
+  const selectedHeading = document.createElement(headingTag);
   selectedHeading.textContent = '你的证据';
   details.append(selectedHeading, record.evidenceIds.length ? evidenceList(record.evidenceIds, descriptions) : paragraph('未选择证据。'));
-  const correctHeading = document.createElement('h3');
+  const correctHeading = document.createElement(headingTag);
   correctHeading.textContent = '正确证据';
   details.append(correctHeading);
   if (applicable && reviewCase.finding) {
@@ -71,10 +71,10 @@ export function createResultDetails(reviewCase: ReviewCase, record: DecisionReco
     });
   } else details.append(paragraph('批准不要求选择证据，判分忽略已选证据。'));
 
-  const explanationHeading = document.createElement('h3');
+  const explanationHeading = document.createElement(headingTag);
   explanationHeading.textContent = '判题解释';
   details.append(explanationHeading, paragraph(reviewCase.finding?.explanation ?? reviewCase.approvalExplanation ?? ''));
-  const sourcesHeading = document.createElement('h3');
+  const sourcesHeading = document.createElement(headingTag);
   sourcesHeading.textContent = '灵感来源与原创改写';
   details.append(sourcesHeading);
   for (const source of reviewCase.sources) {

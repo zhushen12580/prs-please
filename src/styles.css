@@ -532,7 +532,8 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
-.result-details h3 {
+.result-details h3,
+.result-details h4 {
   margin-top: 1.25rem;
   font-size: 1rem;
 }

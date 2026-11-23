@@ -89,7 +89,7 @@ test.describe('逐日规则 · 第五天与五天通关入口', () => {
       const records = final.getByRole('article');
       await expect(records).toHaveCount(30);
       for (const [index, id] of seen.entries()) {
-        await expect(records.nth(index).getByRole('heading')).toContainText(`PR ${id}`);
+        await expect(records.nth(index).getByRole('heading', { level: 3 })).toContainText(`PR ${id}`);
         await expect(records.nth(index)).toContainText('本题得分：10/10');
       }
       expect(new Set(seen).size).toBe(30);

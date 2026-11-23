@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 import type { Verdict } from '../../../src/game/types';
 
 const verdictLabels: Record<Verdict, string> = { approve: '批准', request_changes: '要求修改', reject: '拒绝' };
@@ -20,4 +20,19 @@ export async function submitDecision(page: Page, verdict: Verdict, evidenceIds: 
 
 export async function nextReview(page: Page): Promise<void> {
   await page.getByRole('button', { name: '下一份', exact: true }).click();
+}
+
+export async function readReviewId(page: Page): Promise<string> {
+  const title = await page.getByRole('heading', { level: 2, name: /^PR / }).innerText();
+  const id = /^PR ([A-Za-z0-9_-]+) ·/.exec(title)?.[1];
+  if (!id) throw new Error(`无法读取 PR 编号：${title}`);
+  return id;
+}
+
+export async function showDaySummary(page: Page, day: number): Promise<Locator> {
+  await page.getByRole('button', { name: '查看日结', exact: true }).click();
+  const summary = page.getByRole('region', { name: `第 ${day} 天日结`, exact: true });
+  await expect(summary.getByRole('heading', { name: `第 ${day} 天日结`, exact: true })).toBeFocused();
+  await expect(summary.locator('time')).toHaveText('18:00');
+  return summary;
 }

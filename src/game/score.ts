@@ -39,6 +39,7 @@ export function scoreDecision(
     points: verdictCorrect ? (evidenceCorrect ? 10 : 5) : 0 };
 }
 
+// 日结和总成绩均从去重记录即时推导；裁决正确数不受证据得分影响。
 export function summarize(records: readonly DecisionRecord[], content: GameContent): Statistics {
   const totals: Statistics = { points: 0, maxPoints: 0, reviewed: 0, correctVerdicts: 0,
     violationsMerged: 0, bugsMerged: 0, goodPrsHarmed: 0 };
