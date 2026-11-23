@@ -135,7 +135,7 @@ describe('第二天跨日状态机', () => {
     expect(act(nextReview, { type: 'submit', caseId: 'd1-01' })).toBe(nextReview);
   });
 
-  test('第二天集合独立、旧 R1 仍计分，十二次全对累计 120 分且未加载第三天不可进入', () => {
+  test('第二天集合独立、旧 R1 仍计分，十二次全对累计 120 分；缺题时不能跨日', () => {
     const first = finishDay(start(), order);
     const next = act(act(first, { type: 'nextDay', day: 1 }), { type: 'startReview' });
     const summary = finishDay(next, ['d2-01', 'd2-02', 'd2-03', 'd2-04', 'd2-05', 'd2-06']);
@@ -144,8 +144,14 @@ describe('第二天跨日状态机', () => {
     expect(new Set(summary.records.map((record) => record.caseId)).size).toBe(12);
     expect(summarize(summary.records, content)).toEqual({ points: 120, maxPoints: 120, reviewed: 12,
       correctVerdicts: 12, violationsMerged: 0, bugsMerged: 0, goodPrsHarmed: 0 });
-    expect(canAdvanceDay(summary, content)).toBe(false);
-    expect(act(summary, { type: 'nextDay', day: 2 })).toBe(summary);
+    expect(canAdvanceDay(summary, content)).toBe(true);
+    const thirdDay = act(summary, { type: 'nextDay', day: 2 });
+    expect(thirdDay).toMatchObject({ day: 3, phase: 'briefing', position: 0, draft: { verdict: null, evidenceIds: [] } });
+    expect(thirdDay.records).toEqual(summary.records);
+    expect(workTime(thirdDay, content)).toBe('09:00');
+    const twoDays = { ...content, cases: content.cases.filter((item) => !item.id.startsWith('d3-')) };
+    expect(canAdvanceDay(summary, twoDays)).toBe(false);
+    expect(transition(summary, { type: 'nextDay', day: 2 }, twoDays)).toBe(summary);
     expect(act(summary, { type: 'nextDay', day: 1 })).toBe(summary);
     const missing = { ...content, cases: content.cases.filter((item) => item.id !== 'd2-03') };
     expect(canAdvanceDay(first, missing)).toBe(false);

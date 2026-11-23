@@ -87,7 +87,7 @@ test.describe('第二天API查证 · 逐日规则', () => {
       await expect(summary.getByText(text, { exact: true })).toBeVisible();
     }
     await expect(summary).not.toContainText('d1-');
-    await expect(page.getByRole('button', { name: '下一天', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '下一天', exact: true })).toBeVisible();
   });
 
   test('手机与另一种子只改变日内顺序，全部批准会放入三份 API bug 和一份 CI bug', async ({ page }) => {
@@ -112,6 +112,6 @@ test.describe('第二天API查证 · 逐日规则', () => {
       await expect(page.getByText(text, { exact: true })).toBeVisible();
     }
     await expect(page.locator('time')).toHaveText('18:00');
-    await expect(page.getByRole('button', { name: '下一天', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '下一天', exact: true })).toBeVisible();
   });
 });

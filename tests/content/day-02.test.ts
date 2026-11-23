@@ -7,15 +7,12 @@ import { answerKey } from '../fixtures/answer-key';
 const ids = ['d2-01', 'd2-02', 'd2-03', 'd2-04', 'd2-05', 'd2-06'];
 
 describe('第二天真实 API 查证内容', () => {
-  test('只加载已完成的两天十二题，按 campaign 归属且没有跨日案例', () => {
+  test('第二天六题按 campaign 归属且没有跨日案例', () => {
     const day = getDayCases(2);
     expect(day.map((item) => item.id)).toEqual(ids);
     expect(campaign.days[1]).toEqual({ day: 2, newRuleId: 'R2', caseIds: ids });
-    expect(cases.map((item) => item.id)).toEqual([
-      'd1-01', 'd1-02', 'd1-03', 'd1-04', 'd1-05', 'd1-06', ...ids,
-    ]);
+    expect(cases.filter((item) => ids.includes(item.id))).toEqual(day);
     expect(validateDay(day, 2, campaign, rules, 'src/data/cases/day-02.json')).toEqual(day);
-    expect(() => getDayCases(3)).toThrow(/尚未加载/);
   });
 
   test('两份正常、三份 R2/bug、一份 R1/bug，人工答案锁定充分证据', () => {

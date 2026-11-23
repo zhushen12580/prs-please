@@ -81,3 +81,35 @@ describe('统一统计口径', () => {
       .toEqual({ points: 0, maxPoints: 20, reviewed: 2, correctVerdicts: 0, violationsMerged: 2, bugsMerged: 1, goodPrsHarmed: 0 });
   });
 });
+
+describe('第三天真实复合充分证据', () => {
+  test.each([
+    ['d3-03', 'tool-parser-ai'], ['d3-04', 'tool-docs-ai'],
+    ['d3-05', 'tool-tests-ai'], ['d3-05', 'tool-tests-import'],
+  ])('%s 使用 %s 与披露栏共同证明；单项、无关项、顺序和重复按集合计分', (id, toolId) => {
+    const item = reviewCase(id);
+    for (const [evidenceIds, points] of [
+      [[toolId], 5], [['disclosure'], 5],
+      [[toolId, 'disclosure'], 10], [['disclosure', toolId], 10],
+      [[toolId, 'disclosure', toolId], 10],
+      [[toolId, 'disclosure', item.ci.logs[0].id], 5],
+    ] as const) {
+      expect(scoreDecision(item, rules, 3, record(id, 'request_changes', [...evidenceIds])))
+        .toMatchObject({ points, verdictCorrect: true, evidenceCorrect: points === 10 });
+    }
+  });
+
+  test('两份等价工具记录全选属于多选，不满足精确匹配', () => {
+    expect(scoreDecision(reviewCase('d3-05'), rules, 3,
+      record('d3-05', 'request_changes', ['tool-tests-ai', 'tool-tests-import', 'disclosure'])).points).toBe(5);
+  });
+
+  test('正常空栏和合规 AI 均可无证据满分；全批准的三份 policy 不计入 bug', () => {
+    for (const id of ['d3-01', 'd3-02']) {
+      expect(scoreDecision(reviewCase(id), rules, 3, record(id, 'approve')).points).toBe(10);
+    }
+    expect(summarize(getDayCases(3).map(({ id }) => record(id, 'approve')), content))
+      .toEqual({ points: 20, maxPoints: 60, reviewed: 6, correctVerdicts: 2,
+        violationsMerged: 4, bugsMerged: 1, goodPrsHarmed: 0 });
+  });
+});

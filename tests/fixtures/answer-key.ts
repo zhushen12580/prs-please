@@ -19,4 +19,12 @@ export const answerKey: Record<string, ExpectedAnswer> = {
   'd2-04': { verdict: 'request_changes', evidenceSets: [['manifest-unawaited']] },
   'd2-05': { verdict: 'request_changes', evidenceSets: [['status-invalid-filter']] },
   'd2-06': { verdict: 'request_changes', evidenceSets: [['ci-retry-failure']] },
+  'd3-01': { verdict: 'approve', evidenceSets: [] },
+  'd3-02': { verdict: 'approve', evidenceSets: [] },
+  'd3-03': { verdict: 'request_changes', evidenceSets: [['tool-parser-ai', 'disclosure']] },
+  'd3-04': { verdict: 'request_changes', evidenceSets: [['tool-docs-ai', 'disclosure']] },
+  'd3-05': { verdict: 'request_changes', evidenceSets: [
+    ['tool-tests-ai', 'disclosure'], ['tool-tests-import', 'disclosure'],
+  ] },
+  'd3-06': { verdict: 'request_changes', evidenceSets: [['transaction-invented-call']] },
 };
