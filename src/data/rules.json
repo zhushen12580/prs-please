@@ -1,0 +1,57 @@
+[
+  {
+    "id": "R1",
+    "unlockDay": 1,
+    "title": "CI 必须通过",
+    "body": "CI 必须通过；失败须修复后重审。",
+    "examples": {
+      "approve": "分页边界修复保留了相关测试，CI 日志显示所有检查通过，可以批准。",
+      "violation": "PR 声称修复日期格式，但 CI 日志显示时区测试失败，应要求修改，修复后重审。"
+    },
+    "violationVerdict": "request_changes"
+  },
+  {
+    "id": "R2",
+    "unlockDay": 2,
+    "title": "核对项目 API",
+    "body": "使用的项目 API 必须存在且符合随附说明。",
+    "examples": {
+      "approve": "随附说明定义了异步游标 API，改动先等待结果再读取游标，且符合其他生效规则，可以批准。",
+      "violation": "改动调用了随附 API 说明明确不存在的路径方法，即使 CI 通过，也应要求修改。"
+    },
+    "violationVerdict": "request_changes"
+  },
+  {
+    "id": "R3",
+    "unlockDay": 3,
+    "title": "披露 AI 辅助",
+    "body": "使用 AI 辅助必须在 PR 描述的披露栏说明。",
+    "examples": {
+      "approve": "贡献者在披露栏注明使用 AI 辅助整理序列化逻辑，且符合其他生效规则，可以批准。",
+      "violation": "投稿工具记录明确表明使用了 AI 辅助，描述中的披露栏却为空；两项证据共同证明需要补充披露，应要求修改。不能凭文风或身份推断 AI 使用。"
+    },
+    "violationVerdict": "request_changes"
+  },
+  {
+    "id": "R4",
+    "unlockDay": 4,
+    "title": "保持相关测试的覆盖",
+    "body": "不得删除或削弱相关测试来制造 CI 通过。",
+    "examples": {
+      "approve": "测试重构提取了重复的准备步骤，保留相同用例和关键断言，且符合其他生效规则，可以批准。",
+      "violation": "改动跳过失败的回归用例来获得绿色 CI，没有修复原问题；应要求修改并恢复有效覆盖。"
+    },
+    "violationVerdict": "request_changes"
+  },
+  {
+    "id": "R5",
+    "unlockDay": 5,
+    "title": "拒绝隐藏后门",
+    "body": "不得引入隐藏执行、凭据外传或绕过验证的后门。",
+    "examples": {
+      "approve": "配置改进明确展示本地选项的用途，保留原有验证，且符合其他生效规则，可以批准。",
+      "violation": "所谓诊断修复暗中读取凭据并发送到外部地址，即使 CI 通过也必须拒绝，不能作为普通返修处理。"
+    },
+    "violationVerdict": "reject"
+  }
+]
