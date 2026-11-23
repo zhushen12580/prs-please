@@ -1,4 +1,5 @@
 import { normalizeSeed } from '../game/random';
+import { hasConsistentProgress } from '../game/state';
 import type { GameContent, GameSave, GameState, Verdict } from '../game/types';
 
 const saveKey = 'prs-please.save.v1';
@@ -49,18 +50,48 @@ export function serializeGame(state: GameState): string {
 
 export function restoreGame(serialized: string, content: GameContent): GameState {
   const save: unknown = JSON.parse(serialized);
-  if (!isGameSave(save) || save.contentVersion !== content.campaign.contentVersion) {
+  if (!isGameSave(save) || save.contentVersion !== content.campaign.contentVersion || !hasConsistentProgress(save, content)) {
     throw new Error('旧进度不可用');
   }
   // 明确复制持久化字段，存档夹带的累计分、队列等数据不会进入运行时状态。
   return gameState(save);
 }
 
-export function loadGame(storage: Pick<Storage, 'getItem'>, content: GameContent): GameState | undefined {
-  const serialized = storage.getItem(saveKey);
-  return serialized === null ? undefined : restoreGame(serialized, content);
+interface LoadResult {
+  state: GameState | undefined;
+  invalidSave: boolean;
+  unavailable: boolean;
 }
 
-export function saveGame(storage: Pick<Storage, 'setItem'>, state: GameState): void {
-  storage.setItem(saveKey, serializeGame(state));
+export function loadGame(storage: Pick<Storage, 'getItem' | 'removeItem'> | undefined, content: GameContent): LoadResult {
+  const result: LoadResult = { state: undefined, invalidSave: false, unavailable: false };
+  if (!storage) return { ...result, unavailable: true };
+  let serialized: string | null;
+  try {
+    serialized = storage.getItem(saveKey);
+  } catch {
+    return { ...result, unavailable: true };
+  }
+  if (serialized === null) return result;
+  try {
+    result.state = restoreGame(serialized, content);
+  } catch {
+    result.invalidSave = true;
+    try {
+      storage.removeItem(saveKey);
+    } catch {
+      result.unavailable = true;
+    }
+  }
+  return result;
+}
+
+export function saveGame(storage: Pick<Storage, 'setItem'> | undefined, state: GameState): boolean {
+  try {
+    if (!storage) return false;
+    storage.setItem(saveKey, serializeGame(state));
+    return true;
+  } catch {
+    return false;
+  }
 }

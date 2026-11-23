@@ -51,6 +51,57 @@ function validEvidence(ids: readonly string[], reviewCase: ReviewCase): boolean 
   return ids.every((id) => known.has(id));
 }
 
+// 存档完成字段类型校验后，再检查它是否是实际流程中可到达的进度。
+export function hasConsistentProgress(state: GameState, content: GameContent): boolean {
+  const days = content.campaign.days;
+  const day = days.find((entry) => entry.day === state.day);
+  if (!day || !Number.isInteger(state.position) || state.position < 0 || state.position >= day.caseIds.length) return false;
+  const previousCount = days.filter((entry) => entry.day < state.day).reduce((sum, entry) => sum + entry.caseIds.length, 0);
+  let expectedCount = previousCount;
+  switch (state.phase) {
+    case 'briefing':
+      if (state.position !== 0) return false;
+      break;
+    case 'review':
+      expectedCount += state.position;
+      break;
+    case 'feedback':
+      expectedCount += state.position + 1;
+      break;
+    case 'final':
+    case 'daySummary':
+      if (state.phase === 'final' && state.day !== Math.max(...days.map((entry) => entry.day))) return false;
+      if (state.position !== day.caseIds.length - 1) return false;
+      expectedCount += day.caseIds.length;
+      break;
+    default:
+      return false;
+  }
+  if (state.records.length !== expectedCount) return false;
+  const order = days.flatMap((entry) => orderCases(entry.caseIds, state.contentVersion, state.seed, entry.day));
+  for (const [index, record] of state.records.entries()) {
+    const reviewCase = content.cases.find((entry) => entry.id === record.caseId);
+    if (record.caseId !== order[index] || !reviewCase || !isVerdict(record.verdict)
+      || new Set(record.evidenceIds).size !== record.evidenceIds.length
+      || !validEvidence(record.evidenceIds, reviewCase)
+      || (record.verdict !== 'approve' && record.evidenceIds.length === 0)) return false;
+  }
+  const draft = state.draft;
+  if (state.phase !== 'review' && state.phase !== 'feedback') {
+    return draft.verdict === null && draft.evidenceIds.length === 0;
+  }
+  if ((draft.verdict !== null && !isVerdict(draft.verdict))
+    || new Set(draft.evidenceIds).size !== draft.evidenceIds.length
+    || !validEvidence(draft.evidenceIds, currentCase(state, content))) return false;
+  if (state.phase === 'feedback') {
+    const record = state.records[state.records.length - 1];
+    return record !== undefined && draft.verdict === record.verdict
+      && draft.evidenceIds.length === record.evidenceIds.length
+      && draft.evidenceIds.every((id) => record.evidenceIds.includes(id));
+  }
+  return true;
+}
+
 export function canSubmit(state: GameState, content: GameContent): boolean {
   if (state.phase !== 'review' || !isVerdict(state.draft.verdict)) return false;
   const reviewCase = currentCase(state, content);

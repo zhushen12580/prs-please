@@ -158,3 +158,141 @@ test.describe('存档与降级 · 正常存档', () => {
     expect(new Set(records.map((record: { caseId: string }) => record.caseId)).size).toBe(30);
   });
 });
+
+test.describe('存档与降级 · 无效存档', () => {
+  for (const corruption of ['损坏 JSON', '旧存档版本', '旧内容版本', '未知案例', '非法阶段', '提前终局', '重复记录', '未知草稿证据']) {
+    test(`${corruption} 显示旧进度不可用并删除，仍能从零开局`, async ({ page }) => {
+      const errors: string[] = [];
+      page.on('pageerror', (error) => errors.push(error.message));
+      await startReview(page);
+      await submitDecision(page, 'approve');
+      const saved = await readSave(page);
+      switch (corruption) {
+        case '旧存档版本': saved.saveVersion = 0; break;
+        case '旧内容版本': saved.contentVersion = '0.9.0'; break;
+        case '未知案例': saved.records[0].caseId = 'unknown'; break;
+        case '非法阶段': saved.phase = 'home'; break;
+        case '提前终局': saved.phase = 'final'; saved.day = 5; saved.position = 5; break;
+        case '重复记录': saved.records.push(saved.records[0]); break;
+        case '未知草稿证据': saved.draft.evidenceIds = ['unknown']; break;
+      }
+      await page.addInitScript(({ saveKey, raw }) => {
+        if (sessionStorage.getItem('invalid-save-installed')) return;
+        sessionStorage.setItem('invalid-save-installed', 'yes');
+        localStorage.setItem(saveKey, raw);
+      }, { saveKey: key, raw: corruption === '损坏 JSON' ? '{' : JSON.stringify(saved) });
+      await page.reload();
+      await expect(page.getByRole('status', { name: '存档状态' })).toContainText('旧进度不可用');
+      await expect(page.getByRole('button', { name: '继续值班', exact: true })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: '开始值班', exact: true })).toBeEnabled();
+      expect(await readSave(page)).toBeNull();
+      await page.reload();
+      await expect(page.getByText(/旧进度不可用/)).toHaveCount(0);
+      await page.getByRole('button', { name: '开始值班', exact: true }).click();
+      await page.getByRole('button', { name: '开始评审', exact: true }).click();
+      expect(await readReviewId(page)).toBe('d1-02');
+      await expect(page.getByText('累计得分：0 分', { exact: true })).toBeVisible();
+      expect((await readSave(page)).records).toEqual([]);
+      expect(errors).toEqual([]);
+    });
+  }
+
+  test('删除坏存档也被拒绝时同时提示内存降级，当前页仍可评审和继续', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await page.addInitScript((saveKey) => {
+      localStorage.setItem(saveKey, '{');
+      Storage.prototype.removeItem = () => { throw new DOMException('denied', 'SecurityError'); };
+      Storage.prototype.setItem = () => { throw new DOMException('denied', 'SecurityError'); };
+    }, key);
+    await startReview(page);
+    await expect(page.getByRole('status', { name: '存档状态' })).toContainText('旧进度不可用');
+    await expect(page.getByRole('status', { name: '存档状态' })).toContainText('进度仅保留至本页关闭');
+    await submitDecision(page, 'approve');
+    await page.getByRole('button', { name: '返回首页', exact: true }).click();
+    await page.getByRole('button', { name: '继续值班', exact: true }).click();
+    await expect(page.getByText('累计得分：10 分', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: '提交裁决', exact: true })).toBeDisabled();
+    expect(errors).toEqual([]);
+  });
+});
+
+test.describe('存档与降级 · 存储禁用', () => {
+  for (const failure of ['获取 localStorage 拒绝', '读取拒绝', '写入配额不足']) {
+    test(`${failure} 后通过真实界面完成全部 30 题`, async ({ page }) => {
+      test.setTimeout(90_000);
+      const errors: string[] = [];
+      page.on('pageerror', (error) => errors.push(error.message));
+      await page.addInitScript((mode) => {
+        if (mode === '获取 localStorage 拒绝') {
+          Object.defineProperty(window, 'localStorage', { get() { throw new DOMException('denied', 'SecurityError'); } });
+        } else if (mode === '读取拒绝') {
+          Storage.prototype.getItem = () => { throw new DOMException('denied', 'SecurityError'); };
+        } else {
+          Storage.prototype.setItem = () => { throw new DOMException('full', 'QuotaExceededError'); };
+        }
+      }, failure);
+      await startReview(page);
+      const warning = page.getByRole('status', { name: '存档状态' });
+      await expect(warning).toContainText('进度仅保留至本页关闭');
+      await expect(warning).not.toContainText('旧进度不可用');
+      for (const [dayIndex, ids] of campaignOrders['maintainer-001'].entries()) {
+        for (const [index, id] of ids.entries()) {
+          expect(await readReviewId(page)).toBe(id);
+          const answer = answerKey[id];
+          await submitDecision(page, answer.verdict, answer.evidenceSets[0] ?? []);
+          if (index < 5) await nextReview(page);
+        }
+        await showDaySummary(page, dayIndex + 1);
+        if (dayIndex < 4) {
+          await page.getByRole('button', { name: '下一天', exact: true }).click();
+          await page.getByRole('button', { name: '开始评审', exact: true }).click();
+        }
+      }
+      await page.getByRole('button', { name: '查看最终成绩', exact: true }).click();
+      const final = page.getByRole('region', { name: '最终成绩', exact: true });
+      await expect(final.getByText('总得分：300/300', { exact: true })).toBeVisible();
+      await expect(final.getByText('裁决正确：30/30', { exact: true })).toBeVisible();
+      await expect(final.getByRole('article')).toHaveCount(30);
+      await expect(warning).toContainText('进度仅保留至本页关闭');
+      expect(errors).toEqual([]);
+    });
+  }
+
+  test('恢复已有两条记录后写入失败，保留分数、草稿及本页继续，并停止访问存储', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await startReview(page);
+    await submitDecision(page, 'approve');
+    await nextReview(page);
+    await submitDecision(page, 'request_changes', ['ci-type-failure']);
+    const saved = await readSave(page);
+    await page.addInitScript(() => {
+      const setItem = Storage.prototype.setItem;
+      let rejected = false;
+      Storage.prototype.setItem = function (saveKey, value) {
+        if (!rejected) {
+          rejected = true;
+          throw new DOMException('full', 'QuotaExceededError');
+        }
+        setItem.call(this, saveKey, value);
+      };
+    });
+    await reloadAndContinue(page);
+    await expect(page.getByText('累计得分：20 分', { exact: true })).toBeVisible();
+    await expect(page.getByText(/进度仅保留至本页关闭/)).toHaveCount(0);
+    await nextReview(page);
+    await expect(page.getByRole('status', { name: '存档状态' })).toContainText('进度仅保留至本页关闭');
+    await page.locator('[data-evidence-id="ci-timezone-failure"]').click();
+    await page.getByRole('button', { name: '要求修改', exact: true }).click();
+    await page.getByRole('button', { name: '返回首页', exact: true }).click();
+    await page.getByRole('button', { name: '继续值班', exact: true }).click();
+    await expect(page.locator('[data-evidence-id="ci-timezone-failure"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: '要求修改', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await page.getByRole('button', { name: '提交裁决', exact: true }).click();
+    await expect(page.getByText('累计得分：30 分', { exact: true })).toBeVisible();
+    await expect(page.locator('time')).toHaveText('13:30');
+    expect(await readSave(page)).toEqual(saved);
+    expect(errors).toEqual([]);
+  });
+});

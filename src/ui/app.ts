@@ -36,21 +36,47 @@ export function mountApp(root: HTMLElement): void {
   const view = document.createElement('div');
   view.className = 'app-view';
   const content = { campaign, cases, rules };
-  let state: GameState | undefined = loadGame(window.localStorage, content);
+  let storage: Storage | undefined;
+  try {
+    storage = window.localStorage;
+  } catch {
+    // 某些隐私设置连获取 localStorage 都会拒绝。
+  }
+  const loaded = loadGame(storage, content);
+  if (loaded.unavailable) storage = undefined;
+  let state: GameState | undefined = loaded.state;
+  const storageNotice = document.createElement('p');
+  storageNotice.className = 'storage-notice';
+  storageNotice.setAttribute('role', 'status');
+  storageNotice.setAttribute('aria-label', '存档状态');
+  storageNotice.setAttribute('aria-live', 'polite');
+
+  function updateStorageNotice(): void {
+    storageNotice.textContent = [loaded.invalidSave ? '旧进度不可用，已丢弃。请开始新的值班。' : '',
+      !storage ? '进度仅保留至本页关闭' : ''].filter(Boolean).join(' ');
+    storageNotice.hidden = !storageNotice.textContent;
+  }
+
+  function persist(): void {
+    if (state && storage && !saveGame(storage, state)) {
+      storage = undefined;
+      updateStorageNotice();
+    }
+  }
 
   function dispatch(action: GameAction): boolean {
     if (!state) return false;
     const next = transition(state, action, content);
     if (next === state) return false;
     state = next;
-    saveGame(window.localStorage, state);
+    persist();
     return true;
   }
 
   function requestStart(seed: string): void {
     if (!state) {
       state = createGame(seed, content);
-      saveGame(window.localStorage, state);
+      persist();
       render();
       return;
     }
@@ -150,7 +176,8 @@ export function mountApp(root: HTMLElement): void {
     (feedback ?? review).querySelector<HTMLHeadingElement>('h2')?.focus();
   }
 
-  main.append(header, view);
+  main.append(header, storageNotice, view);
   root.replaceChildren(main);
+  updateStorageNotice();
   renderHome();
 }
