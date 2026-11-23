@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
 import { parse } from 'yaml';
 
@@ -77,11 +77,12 @@ describe('Ubuntu 无人值守检查 CI', () => {
     }
   });
 
-  test('只使用检出与 Node 设置 action，不发布、推送或部署', () => {
+  test('检查工作流只使用检出与 Node 设置 action，发布由独立手动工作流负责', () => {
     const job = checkJob();
     expect(job.steps.flatMap((step) => step.uses ? [step.uses.split('@')[0]] : []))
       .toEqual(['actions/checkout', 'actions/setup-node']);
     expect(job.environment).toBeUndefined();
-    expect(existsSync('.github/workflows/pages.yml')).toBe(false);
+    const pages = parse(readFileSync('.github/workflows/pages.yml', 'utf8')) as { on: Record<string, unknown> };
+    expect(Object.keys(pages.on)).toEqual(['workflow_dispatch']);
   });
 });

@@ -12,8 +12,8 @@ export interface Rule {
   violationVerdict: Exclude<Verdict, 'approve'>;
 }
 
-// 简报只消费可展示的文案。
-export type BriefingRule = Pick<Rule, 'id' | 'title' | 'body' | 'examples'>;
+// 简报消费规则文案及用于标注违规示例的裁决。
+export type BriefingRule = Pick<Rule, 'id' | 'title' | 'body' | 'examples' | 'violationVerdict'>;
 
 export interface CampaignDay {
   day: number;

@@ -1,4 +1,5 @@
 import type { BriefingRule } from '../game/types';
+import { verdictLabels } from './decision';
 
 export function createBriefing(seed: string, day: number, rule: BriefingRule): HTMLElement {
   const section = document.createElement('section');
@@ -40,7 +41,7 @@ export function createBriefing(seed: string, day: number, rule: BriefingRule): H
   ruleCard.append(badge, ruleTitle, body);
   for (const [label, text] of [
     ['可以批准', rule.examples.approve],
-    ['要求修改', rule.examples.violation],
+    [verdictLabels[rule.violationVerdict], rule.examples.violation],
   ]) {
     const example = document.createElement('section');
     example.className = 'rule-example';

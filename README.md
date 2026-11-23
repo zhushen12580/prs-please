@@ -131,7 +131,19 @@ PRS_PLEASE_BASE=/review-lab/ npm run preview -- --host 127.0.0.1 --port 4173 --s
 
 Open [http://127.0.0.1:4173/review-lab/](http://127.0.0.1:4173/review-lab/). The build flag sets asset URLs; the preview environment variable makes the preview server use the matching base. For another repository name, replace `/review-lab/` in both commands with its public path, including the leading and trailing slashes. `PRS_PLEASE_BASE` is a public path setting, not a secret.
 
+The optional setting is documented in [.env.example](.env.example), with `/prs-please/` as its default. Vite and Playwright read the process environment for this setting; export it in your shell or set it before the command as above. Copying the example to `.env` alone does not configure these tools.
+
 The game changes screens inside the root HTML document without History API routes, so refreshing that base URL needs no server-side route fallback. A static host must serve `dist/` at the same public path used for the build. Before returning to the default browser-test sequence, stop preview with Ctrl+C and run `npm run build` to restore `/prs-please/`.
+
+## Deploy to GitHub Pages
+
+The [Pages workflow](.github/workflows/pages.yml) runs only when manually triggered (`workflow_dispatch`). Once the workflow is available on the repository's default branch:
+
+1. In the repository's **Settings → Pages → Build and deployment**, set **Source** to **GitHub Actions**.
+2. Open **Actions → Deploy to GitHub Pages → Run workflow**, select the default branch, then click **Run workflow**.
+3. Wait for the build and deployment jobs to succeed, then open the **github-pages** environment URL shown in the workflow run.
+
+The workflow installs locked dependencies with Node.js 24, runs unit/content tests, builds `dist/`, uploads the Pages artifact and deploys it. The build derives the public base from GitHub's built-in `GITHUB_REPOSITORY`, so this repository uses `/prs-please/` and a renamed repository uses its own name. It needs no Git remote lookup or personal access token; GitHub's built-in token and OIDC permissions handle the deployment. See [GitHub's custom Pages workflow guide](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages) for the hosting setup.
 
 ## Contribute and license
 

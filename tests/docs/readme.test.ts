@@ -79,4 +79,15 @@ describe('English README contract', () => {
     expect(readFileSync('LICENSE', 'utf8')).toContain('MIT License');
     expect(guide).toMatch(/\nBuilt with Claude Code & Codex\r?\n?$/);
   });
+
+  test('documents the optional public base example and manual GitHub Pages deployment', () => {
+    const guide = readme();
+    expect(guide).toContain('[.env.example](.env.example)');
+    const deployment = /^## Deploy to GitHub Pages\r?\n([\s\S]*?)(?=^## |$(?![\s\S]))/m.exec(guide)?.[1];
+    expect(deployment).toBeDefined();
+    for (const text of ['Settings', 'Pages', 'GitHub Actions', 'Run workflow',
+      '.github/workflows/pages.yml', 'GITHUB_REPOSITORY', 'dist/', 'built-in', 'token']) {
+      expect(deployment).toContain(text);
+    }
+  });
 });
