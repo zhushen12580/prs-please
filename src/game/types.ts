@@ -78,3 +78,28 @@ export type ReviewCase = CaseMaterials & (
   | { finding: null; approvalExplanation: string }
   | { finding: Finding; approvalExplanation?: never }
 );
+
+export interface GameContent {
+  campaign: Campaign;
+  rules: readonly Rule[];
+  cases: readonly ReviewCase[];
+}
+
+export interface DecisionRecord {
+  readonly caseId: string;
+  readonly verdict: Verdict;
+  readonly evidenceIds: readonly string[];
+}
+
+export interface GameState {
+  readonly contentVersion: string;
+  readonly seed: string;
+  readonly phase: 'briefing' | 'review' | 'feedback' | 'daySummary';
+  readonly day: number;
+  readonly position: number;
+  readonly records: readonly DecisionRecord[];
+  readonly draft: {
+    readonly verdict: Verdict | null;
+    readonly evidenceIds: readonly string[];
+  };
+}

@@ -1,8 +1,13 @@
-import { campaign, getDayCases, rules } from '../content/load';
-import { orderCases } from '../game/random';
+import { campaign, cases, rules } from '../content/load';
+import { summarize } from '../game/score';
+import { canSubmit, createGame, currentCase, transition, workTime, type GameAction } from '../game/state';
+import type { GameState } from '../game/types';
 import { createBriefing } from './briefing';
+import { createDecision } from './decision';
+import { createFeedback } from './feedback';
 import { createHome } from './home';
 import { createReview } from './review';
+import { createDaySummary } from './summary';
 
 export function mountApp(root: HTMLElement): void {
   const main = document.createElement('main');
@@ -22,31 +27,86 @@ export function mountApp(root: HTMLElement): void {
 
   const view = document.createElement('div');
   view.className = 'app-view';
-  view.append(createHome((seed) => {
-    const firstRule = rules.find((rule) => rule.unlockDay === 1);
-    if (!firstRule) throw new Error('缺少第 1 天规则');
-    const briefing = createBriefing(seed, 1, firstRule);
-    const startReview = document.createElement('button');
-    startReview.type = 'button';
-    startReview.className = 'primary-button';
-    startReview.textContent = '开始评审';
-    startReview.addEventListener('click', () => {
-      const day = campaign.days.find((entry) => entry.day === 1);
-      if (!day) throw new Error('缺少第 1 天关卡');
-      const [firstId] = orderCases(day.caseIds, campaign.contentVersion, seed, 1);
-      const reviewCase = getDayCases(1).find((entry) => entry.id === firstId);
-      if (!reviewCase) throw new Error(`缺少案例 ${firstId}`);
-      const review = createReview({ reviewCase, day: 1, position: 1, total: day.caseIds.length, time: '09:00', rules });
-      const seedLabel = document.createElement('p');
-      seedLabel.className = 'shift-details';
-      seedLabel.textContent = `挑战种子：${seed}`;
-      main.classList.add('app-workbench');
-      view.replaceChildren(seedLabel, review);
-      review.querySelector<HTMLHeadingElement>('h2')?.focus();
+  const content = { campaign, cases, rules };
+  let state: GameState;
+
+  function dispatch(action: GameAction): boolean {
+    const next = transition(state, action, content);
+    if (next === state) return false;
+    state = next;
+    return true;
+  }
+
+  function render(): void {
+    main.classList.toggle('app-workbench', state.phase !== 'briefing');
+    if (state.phase === 'briefing') {
+      const day = campaign.days.find((entry) => entry.day === state.day);
+      const newRule = rules.find((rule) => rule.id === day?.newRuleId);
+      if (!newRule) throw new Error(`缺少第 ${state.day} 天规则`);
+      const briefing = createBriefing(state.seed, state.day, newRule);
+      const startReview = document.createElement('button');
+      startReview.type = 'button';
+      startReview.className = 'primary-button';
+      startReview.textContent = '开始评审';
+      startReview.addEventListener('click', () => {
+        if (dispatch({ type: 'startReview' })) render();
+      });
+      briefing.append(startReview);
+      view.replaceChildren(briefing);
+      briefing.querySelector<HTMLHeadingElement>('h2')?.focus();
+      return;
+    }
+    if (state.phase === 'daySummary') {
+      const summary = createDaySummary(state, content);
+      view.replaceChildren(summary);
+      summary.querySelector<HTMLHeadingElement>('h2')?.focus();
+      return;
+    }
+    const reviewCase = currentCase(state, content);
+    const locked = state.phase === 'feedback';
+    const decisionStatus = () => ({ verdict: state.draft.verdict, canSubmit: canSubmit(state, content), locked: state.phase !== 'review' });
+    const decision = createDecision(decisionStatus(), (verdict) => {
+      dispatch({ type: 'selectVerdict', verdict });
+      decision.update(decisionStatus());
+    }, () => {
+      if (dispatch({ type: 'submit', caseId: reviewCase.id })) render();
     });
-    briefing.append(startReview);
-    view.replaceChildren(briefing);
-    briefing.querySelector<HTMLHeadingElement>('h2')?.focus();
+    const definition = campaign.days.find((entry) => entry.day === state.day);
+    if (!definition) throw new Error(`缺少第 ${state.day} 天关卡`);
+    let feedback: HTMLElement | undefined;
+    if (locked) {
+      const record = state.records.find((entry) => entry.caseId === reviewCase.id);
+      if (!record) throw new Error(`缺少裁决 ${reviewCase.id}`);
+      feedback = createFeedback(reviewCase, record, state.day, rules);
+      const next = document.createElement('button');
+      next.type = 'button';
+      next.className = 'primary-button';
+      next.textContent = state.position === definition.caseIds.length - 1 ? '查看日结' : '下一份';
+      next.addEventListener('click', () => {
+        if (dispatch({ type: 'next', caseId: reviewCase.id })) render();
+      });
+      feedback.append(next);
+    }
+    const review = createReview({ reviewCase, day: state.day, position: state.position + 1,
+      total: definition.caseIds.length, time: workTime(state, content), rules,
+      initialEvidenceIds: state.draft.evidenceIds, locked, decision: decision.element, feedback,
+      onEvidenceChange: (evidenceIds) => {
+        dispatch({ type: 'selectEvidence', evidenceIds });
+        decision.update(decisionStatus());
+      } });
+    const seedLabel = document.createElement('p');
+    seedLabel.className = 'shift-details';
+    seedLabel.textContent = `挑战种子：${state.seed}`;
+    const points = document.createElement('p');
+    points.className = 'shift-score';
+    points.textContent = `累计得分：${summarize(state.records, content).points} 分`;
+    view.replaceChildren(seedLabel, points, review);
+    (feedback ?? review).querySelector<HTMLHeadingElement>('h2')?.focus();
+  }
+
+  view.append(createHome((seed) => {
+    state = createGame(seed, content);
+    render();
   }));
 
   main.append(header, view);

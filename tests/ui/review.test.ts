@@ -42,7 +42,9 @@ test('第一天简报通过开始评审进入默认种子的真实首题', () =>
   for (const text of ['第 1 天', '1/6', '09:00', 'maintainer-001']) {
     expect(root.textContent).toContain(text);
   }
-  expect(root.textContent).not.toContain('提交裁决');
+  const submit = [...root.querySelectorAll('button')].find((button) => button.textContent === '提交裁决');
+  expect(submit).toBeDefined();
+  expect(submit?.disabled).toBe(true);
 });
 
 describe('工作台材料', () => {

@@ -10,6 +10,10 @@ interface ReviewOptions {
   total: number;
   time: string;
   rules: readonly Rule[];
+  initialEvidenceIds?: readonly string[];
+  locked?: boolean;
+  decision?: HTMLElement;
+  feedback?: HTMLElement;
   onEvidenceChange?: (ids: readonly string[]) => void;
 }
 
@@ -52,12 +56,14 @@ export function createReview(options: ReviewOptions): HTMLElement {
   const status = document.createElement('p');
   status.className = 'evidence-summary';
   status.setAttribute('role', 'status');
-  status.textContent = '已选证据：0 项';
+  const selected = new Set(options.initialEvidenceIds);
+  status.textContent = `已选证据：${selected.size} 项`;
 
-  const selected = new Set<string>();
   const selection: EvidenceSelection = {
     selected,
+    locked: options.locked,
     onToggle: (id) => {
+      if (options.locked) return;
       if (selected.has(id)) selected.delete(id);
       else selected.add(id);
       status.textContent = `已选证据：${selected.size} 项`;
@@ -67,6 +73,10 @@ export function createReview(options: ReviewOptions): HTMLElement {
   const layout = document.createElement('div');
   layout.className = 'review-layout';
   layout.append(createMaterials(reviewCase, selection), createDiff(reviewCase.files, selection));
-  review.append(toolbar, title, hint, status, layout, manual);
+  review.append(toolbar, title, hint, status);
+  if (options.feedback) review.append(options.feedback);
+  review.append(layout);
+  if (options.decision) review.append(options.decision);
+  review.append(manual);
   return review;
 }

@@ -45,7 +45,7 @@ test.describe('工作台材料与手册', () => {
     await ci.press('Space');
     await expect(page.getByRole('status')).toHaveText('已选证据：4 项');
     await expect(page.locator('time')).toHaveText('09:00');
-    await expect(page.getByRole('button', { name: '提交裁决', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '提交裁决', exact: true })).toBeDisabled();
     expect(errors).toEqual([]);
   });
 

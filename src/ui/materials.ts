@@ -3,6 +3,7 @@ import type { EvidenceEntry, ReviewCase } from '../game/types';
 export interface EvidenceSelection {
   selected: ReadonlySet<string>;
   onToggle: (id: string) => void;
+  locked?: boolean;
 }
 
 // 资料和 diff 共用同一种选择控件，证据身份来自内容 ID。
@@ -11,6 +12,7 @@ export function createEvidenceButton(entry: EvidenceEntry, selection: EvidenceSe
   button.type = 'button';
   button.className = 'evidence-button';
   button.dataset.evidenceId = entry.id;
+  button.disabled = selection.locked ?? false;
 
   const text = document.createElement('span');
   text.className = 'evidence-text';
