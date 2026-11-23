@@ -10,7 +10,8 @@
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "build": "npm run typecheck && vite build",
+    "check:content": "vitest run tests/content",
+    "build": "npm run typecheck && npm run check:content && vite build",
     "preview": "vite preview",
     "test:e2e": "playwright test"
   },

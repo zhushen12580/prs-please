@@ -112,6 +112,33 @@ describe('单案例内容类型契约', () => {
       .toThrow(/重复/);
     expect(() => parseCase(changed('finding.evidenceSets', [[first], [second]]))).not.toThrow();
   });
+
+  test.each([
+    'unexpected', 'description.unexpected', 'description.disclosure.unexpected',
+    'contributor.unexpected', 'contributor.toolRecords.0.unexpected', 'ci.unexpected',
+    'ci.logs.0.unexpected', 'files.0.unexpected', 'files.0.lines.0.unexpected',
+    'finding.unexpected', 'sources.0.unexpected',
+  ])('未知字段不能被静默丢弃：%s', (path) => {
+    expect(() => parseCase(changed(path, true), source))
+      .toThrow(`${source}.${path.replace(/\.(\d+)/g, '[$1]')}`);
+  });
+
+  test('同一 diff 文件路径不能重复，每个文件的行号独立递增且允许片段跳号', () => {
+    const copy = structuredClone(rawDay[1]);
+    copy.files[1].path = copy.files[0].path;
+    expect(() => parseCase(copy, 'src/data/cases/day-01.json[1]'))
+      .toThrow('src/data/cases/day-01.json[1].files[1].path');
+    for (const field of ['oldLine', 'newLine']) {
+      expect(() => parseCase(changed(`files.0.lines.1.${field}`, 1), source))
+        .toThrow(`${source}.files[0].lines[1].${field}`);
+    }
+    const gap = structuredClone(rawDay[3]);
+    for (const line of gap.files[0].lines.slice(1)) {
+      if (line.oldLine !== null) line.oldLine += 10;
+      if (line.newLine !== null) line.newLine += 10;
+    }
+    expect(() => parseCase(gap, source)).not.toThrow();
+  });
 });
 
 describe('单日完整性与规则引用', () => {
@@ -119,7 +146,7 @@ describe('单日完整性与规则引用', () => {
   const rules = () => parseRules(rawRules);
   const check = (value: unknown) => validateDay(value, 1, campaign(), rules(), 'day.json');
 
-  test('只验证已落地的一天，不要求未来案例存在；输入顺序不决定归属', () => {
+  test('单日工具可独立验证内容；输入顺序不决定归属，生产入口另做整库校验', () => {
     expect(check(rawDay)).toHaveLength(6);
     expect(check([...rawDay].reverse()).map((item) => item.id)).toEqual([...rawDay].reverse().map((item) => item.id));
   });
@@ -177,5 +204,20 @@ describe('映射与规则的类型入口', () => {
       .toThrow('[0].violationVerdict');
     expect(() => parseRules(rawRules.map((rule, i) => i === 0 ? { ...rule, examples: { approve: '' } } : rule)))
       .toThrow('[0].examples.approve');
+  });
+
+  test('映射、规则、简报例子及 API 参考的未知字段也有精确定位', () => {
+    expect(() => parseCampaign({ ...rawCampaign, unexpected: true })).toThrow('src/data/campaign.json.unexpected');
+    const campaign = structuredClone(rawCampaign);
+    Object.assign(campaign.days[0], { unexpected: true });
+    expect(() => parseCampaign(campaign)).toThrow('src/data/campaign.json.days[0].unexpected');
+    expect(() => parseRules(rawRules.map((rule, index) => index === 0 ? { ...rule, unexpected: true } : rule)))
+      .toThrow('src/data/rules.json[0].unexpected');
+    expect(() => parseRules(rawRules.map((rule, index) => index === 0 ? {
+      ...rule, examples: { ...rule.examples, unexpected: true },
+    } : rule))).toThrow('src/data/rules.json[0].examples.unexpected');
+    expect(() => parseCase({ ...rawDay[3], apiReference: [
+      { name: 'api', signature: '() => void', notes: '说明', unexpected: true },
+    ] }, source)).toThrow(`${source}.apiReference[0].unexpected`);
   });
 });

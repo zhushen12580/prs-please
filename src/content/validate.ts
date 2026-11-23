@@ -1,4 +1,4 @@
-import type { Campaign, DiffLine, EvidenceEntry, Finding, Impact, ReviewCase, Rule } from '../game/types';
+import type { Campaign, DiffLine, EvidenceEntry, Finding, GameContent, Impact, ReviewCase, Rule } from '../game/types';
 
 function fail(path: string, message: string): never {
   throw new Error(`${path}: ${message}`);
@@ -8,8 +8,13 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function object(value: unknown, path: string): Record<string, unknown> {
+function object(value: unknown, path: string, fields?: readonly string[]): Record<string, unknown> {
   if (!isObject(value)) fail(path, '必须为对象');
+  if (fields) {
+    for (const key of Object.keys(value)) {
+      if (!fields.includes(key)) fail(`${path}.${key}`, '未知字段');
+    }
+  }
   return value;
 }
 
@@ -43,14 +48,14 @@ function unique(value: string | number, seen: Set<string | number>, path: string
 }
 
 export function parseCampaign(input: unknown, source = 'src/data/campaign.json'): Campaign {
-  const value = object(input, source);
+  const value = object(input, source, ['contentVersion', 'days']);
   const contentVersion = text(value.contentVersion, `${source}.contentVersion`);
   const seenDays = new Set<string | number>();
   const seenCases = new Set<string | number>();
   const seenRules = new Set<string | number>();
   const days = list(value.days, `${source}.days`, 5, 5).map((item, index) => {
     const path = `${source}.days[${index}]`;
-    const entry = object(item, path);
+    const entry = object(item, path, ['day', 'newRuleId', 'caseIds']);
     const day = integer(entry.day, `${path}.day`, 1, 5);
     unique(day, seenDays, `${path}.day`);
     const newRuleId = text(entry.newRuleId, `${path}.newRuleId`);
@@ -71,12 +76,12 @@ export function parseRules(input: unknown, source = 'src/data/rules.json'): Rule
   const seenDays = new Set<string | number>();
   return list(input, source, 5, 5).map((item, index) => {
     const path = `${source}[${index}]`;
-    const value = object(item, path);
+    const value = object(item, path, ['id', 'unlockDay', 'title', 'body', 'examples', 'violationVerdict']);
     const id = text(value.id, `${path}.id`);
     unique(id, seenIds, `${path}.id`);
     const unlockDay = integer(value.unlockDay, `${path}.unlockDay`, 1, 5);
     unique(unlockDay, seenDays, `${path}.unlockDay`);
-    const examples = object(value.examples, `${path}.examples`);
+    const examples = object(value.examples, `${path}.examples`, ['approve', 'violation']);
     return {
       id, unlockDay,
       title: text(value.title, `${path}.title`),
@@ -91,10 +96,13 @@ export function parseRules(input: unknown, source = 'src/data/rules.json'): Rule
 }
 
 export function parseCase(input: unknown, source = 'case'): ReviewCase {
-  const value = object(input, source);
+  const value = object(input, source, ['id', 'title', 'description', 'contributor', 'ci', 'files', 'sources',
+    'apiReference', 'finding', 'approvalExplanation']);
   const evidenceIds = new Set<string | number>();
-  function evidence(input: unknown, path: string, allowEmpty = false): EvidenceEntry {
-    const entry = object(input, path);
+  const filePaths = new Set<string | number>();
+  function evidence(input: unknown, path: string, allowEmpty = false,
+    fields: readonly string[] = ['id', 'text']): EvidenceEntry {
+    const entry = object(input, path, fields);
     const id = text(entry.id, `${path}.id`);
     unique(id, evidenceIds, `${path}.id`);
     return { id, text: text(entry.text, `${path}.text`, allowEmpty) };
@@ -102,7 +110,7 @@ export function parseCase(input: unknown, source = 'case'): ReviewCase {
 
   function line(input: unknown, path: string): DiffLine {
     const value = object(input, path);
-    const entry = evidence(value, path, true);
+    const entry = evidence(value, path, true, ['id', 'text', 'kind', 'oldLine', 'newLine']);
     const kind = oneOf(value.kind, ['add', 'delete', 'context'], `${path}.kind`);
     if (kind === 'add') {
       if (value.oldLine !== null) fail(`${path}.oldLine`, '新增行的旧行号必须为 null');
@@ -116,9 +124,9 @@ export function parseCase(input: unknown, source = 'case'): ReviewCase {
       newLine: integer(value.newLine, `${path}.newLine`) };
   }
 
-  const description = object(value.description, `${source}.description`);
-  const contributor = object(value.contributor, `${source}.contributor`);
-  const ci = object(value.ci, `${source}.ci`);
+  const description = object(value.description, `${source}.description`, ['summary', 'disclosure']);
+  const contributor = object(value.contributor, `${source}.contributor`, ['name', 'handle', 'toolRecords']);
+  const ci = object(value.ci, `${source}.ci`, ['status', 'logs']);
   const materials = {
     id: text(value.id, `${source}.id`),
     title: text(value.title, `${source}.title`),
@@ -138,15 +146,29 @@ export function parseCase(input: unknown, source = 'case'): ReviewCase {
     },
     files: list(value.files, `${source}.files`, 1, 2).map((input, i) => {
       const path = `${source}.files[${i}]`;
-      const file = object(input, path);
-      return {
-        path: text(file.path, `${path}.path`),
-        lines: list(file.lines, `${path}.lines`).map((entry, j) => line(entry, `${path}.lines[${j}]`)),
-      };
+      const file = object(input, path, ['path', 'lines']);
+      const filePath = text(file.path, `${path}.path`);
+      unique(filePath, filePaths, `${path}.path`);
+      let lastOld = 0;
+      let lastNew = 0;
+      const lines = list(file.lines, `${path}.lines`).map((entry, j) => {
+        const linePath = `${path}.lines[${j}]`;
+        const parsed = line(entry, linePath);
+        if (parsed.oldLine !== null) {
+          if (parsed.oldLine <= lastOld) fail(`${linePath}.oldLine`, '旧行号必须递增且不重复');
+          lastOld = parsed.oldLine;
+        }
+        if (parsed.newLine !== null) {
+          if (parsed.newLine <= lastNew) fail(`${linePath}.newLine`, '新行号必须递增且不重复');
+          lastNew = parsed.newLine;
+        }
+        return parsed;
+      });
+      return { path: filePath, lines };
     }),
     sources: list(value.sources, `${source}.sources`).map((input, i) => {
       const path = `${source}.sources[${i}]`;
-      const entry = object(input, path);
+      const entry = object(input, path, ['url', 'theme', 'note']);
       const url = text(entry.url, `${path}.url`);
       try {
         if (new URL(url).protocol !== 'https:') fail(`${path}.url`, '来源 URL 必须使用 https:');
@@ -163,7 +185,7 @@ export function parseCase(input: unknown, source = 'case'): ReviewCase {
   const api = 'apiReference' in value ? {
     apiReference: list(value.apiReference, `${source}.apiReference`).map((input, i) => {
       const path = `${source}.apiReference[${i}]`;
-      const entry = object(input, path);
+      const entry = object(input, path, ['name', 'signature', 'notes']);
       return { name: text(entry.name, `${path}.name`), signature: text(entry.signature, `${path}.signature`),
         notes: text(entry.notes, `${path}.notes`) };
     }),
@@ -175,7 +197,8 @@ export function parseCase(input: unknown, source = 'case'): ReviewCase {
   }
 
   const path = `${source}.finding`;
-  const finding = object(value.finding, path);
+  const finding = object(value.finding, path, ['ruleId', 'impact', 'evidenceSets', 'explanation']);
+  if ('approvalExplanation' in value) fail(`${source}.approvalExplanation`, '仅正常案例可以包含批准解释');
   const seenSets = new Set<string | number>();
   const evidenceSets = list(finding.evidenceSets, `${path}.evidenceSets`).map((input, i) => {
     const setPath = `${path}.evidenceSets[${i}]`;
@@ -199,7 +222,43 @@ export function parseCase(input: unknown, source = 'case'): ReviewCase {
   return { ...materials, ...api, finding: parsedFinding };
 }
 
-// 增量阶段只核对当日；这里不要求未来四天的案例已经存在。
+const impacts = new Map<string, Impact>([
+  ['R1', 'bug'], ['R2', 'bug'], ['R3', 'policy'], ['R4', 'bug'], ['R5', 'backdoor'],
+]);
+
+const distributions: Record<number, Record<string, number>> = {
+  1: { approve: 3, R1: 3 },
+  2: { approve: 2, R2: 3, R1: 1 },
+  3: { approve: 2, R3: 3, R2: 1 },
+  4: { approve: 2, R4: 3, R1: 1 },
+  5: { approve: 2, R5: 2, R3: 1, R4: 1 },
+};
+
+function validateCaseRules(item: ReviewCase, day: number, rules: readonly Rule[], path: string): void {
+  const finding = item.finding;
+  if (finding) {
+    const rule = rules.find((rule) => rule.id === finding.ruleId);
+    if (!rule || rule.unlockDay > day) fail(`${path}.finding.ruleId`, '规则未知或尚未解锁');
+    if (finding.impact !== impacts.get(finding.ruleId)) fail(`${path}.finding.impact`, '影响标签与规则不一致');
+  }
+  const expectedCI = finding?.ruleId === 'R1' ? 'failed' : 'passed';
+  if (item.ci.status !== expectedCI) fail(`${path}.ci.status`, 'CI 状态与 R1 违规不一致');
+}
+
+function validateDistribution(cases: readonly ReviewCase[], day: number, path: string): void {
+  const expected = distributions[day];
+  const actual: Record<string, number> = {};
+  for (const item of cases) {
+    const key = item.finding?.ruleId ?? 'approve';
+    actual[key] = (actual[key] ?? 0) + 1;
+  }
+  if (Object.keys(actual).length !== Object.keys(expected).length ||
+    Object.entries(expected).some(([key, count]) => actual[key] !== count)) {
+    fail(path, `第 ${day} 天的正常/问题分布不符合约定`);
+  }
+}
+
+// 独立单日工具复用相同的规则与分布检查；生产加载使用下面的整库入口。
 export function validateDay(input: unknown, day: number, campaign: Campaign,
   rules: readonly Rule[], source: string): ReviewCase[] {
   const definition = campaign.days.find((entry) => entry.day === day);
@@ -212,33 +271,64 @@ export function validateDay(input: unknown, day: number, campaign: Campaign,
     const parsed = parseCase(item, path);
     unique(parsed.id, seen, `${path}.id`);
     if (!definition.caseIds.includes(parsed.id)) fail(`${path}.id`, '案例未归属当天的 campaign 映射');
-    const finding = parsed.finding;
-    if (finding) {
-      const rule = rules.find((rule) => rule.id === finding.ruleId);
-      if (!rule || rule.unlockDay > day) fail(`${path}.finding.ruleId`, '规则未知或尚未解锁');
-      const impacts: Record<string, Impact> = { R1: 'bug', R2: 'bug', R3: 'policy', R4: 'bug', R5: 'backdoor' };
-      if (finding.impact !== impacts[finding.ruleId]) fail(`${path}.finding.impact`, '影响标签与规则不一致');
-    }
-    const expectedCI = finding?.ruleId === 'R1' ? 'failed' : 'passed';
-    if (parsed.ci.status !== expectedCI) fail(`${path}.ci.status`, 'CI 状态与 R1 违规不一致');
+    validateCaseRules(parsed, day, rules, path);
     return parsed;
   });
-  const distributions: Record<number, Record<string, number>> = {
-    1: { approve: 3, R1: 3 },
-    2: { approve: 2, R2: 3, R1: 1 },
-    3: { approve: 2, R3: 3, R2: 1 },
-    4: { approve: 2, R4: 3, R1: 1 },
-    5: { approve: 2, R5: 2, R3: 1, R4: 1 },
-  };
-  const expected = distributions[day];
-  const actual: Record<string, number> = {};
-  for (const item of cases) {
-    const key = item.finding?.ruleId ?? 'approve';
-    actual[key] = (actual[key] ?? 0) + 1;
-  }
-  if (Object.keys(actual).length !== Object.keys(expected).length ||
-    Object.entries(expected).some(([key, count]) => actual[key] !== count)) {
-    fail(source, `第 ${day} 天的正常/问题分布不符合约定`);
-  }
+  validateDistribution(cases, day, source);
   return cases;
+}
+
+export interface CaseFile {
+  source: string;
+  data: unknown;
+}
+
+export function validateContent(rawCampaign: unknown, rawRules: unknown, caseFiles: readonly CaseFile[]): GameContent {
+  const campaignSource = 'src/data/campaign.json';
+  const rulesSource = 'src/data/rules.json';
+  const campaign = parseCampaign(rawCampaign, campaignSource);
+  const rules = parseRules(rawRules, rulesSource);
+  for (const [index, rule] of rules.entries()) {
+    const path = `${rulesSource}[${index}]`;
+    const unlockDay = ['R1', 'R2', 'R3', 'R4', 'R5'].indexOf(rule.id) + 1;
+    if (!unlockDay) fail(`${path}.id`, '规则必须为 R1–R5');
+    if (rule.unlockDay !== unlockDay) fail(`${path}.unlockDay`, '规则的解锁日不符合约定');
+    const expectedVerdict = rule.id === 'R5' ? 'reject' : 'request_changes';
+    if (rule.violationVerdict !== expectedVerdict) fail(`${path}.violationVerdict`, '违规裁决不符合规则约定');
+  }
+
+  const mappedIds = new Set(campaign.days.flatMap((day) => day.caseIds));
+  const byId = new Map<string, { item: ReviewCase; path: string }>();
+  const mappingErrors: string[] = [];
+  const cases = caseFiles.flatMap(({ source, data }) => list(data, source, 0).map((rawCase, index) => {
+    const path = `${source}[${index}]`;
+    const item = parseCase(rawCase, path);
+    const previous = byId.get(item.id);
+    if (previous) fail(`${path}.id`, `重复案例 ID ${item.id}；首次位于 ${previous.path}.id`);
+    byId.set(item.id, { item, path });
+    if (!mappedIds.has(item.id)) mappingErrors.push(`${path}.id: 案例未归属 campaign 映射：${item.id}`);
+    return item;
+  }));
+
+  for (const [index, day] of campaign.days.entries()) {
+    const path = `${campaignSource}.days[${index}]`;
+    const newRule = rules.find((rule) => rule.id === day.newRuleId);
+    if (!newRule || newRule.unlockDay !== day.day) fail(`${path}.newRuleId`, '新规则与当日解锁规则不一致');
+    for (const [caseIndex, id] of day.caseIds.entries()) {
+      if (!byId.has(id)) mappingErrors.push(`${path}.caseIds[${caseIndex}]: 映射的案例不存在：${id}`);
+    }
+  }
+  // 同时指出缺失的映射和未归属的案例，避免贡献者只能看到其中一端。
+  if (mappingErrors.length) throw new Error(mappingErrors.join('\n'));
+
+  for (const [index, day] of campaign.days.entries()) {
+    const dayCases = day.caseIds.map((id) => {
+      const entry = byId.get(id);
+      if (!entry) return fail(`${campaignSource}.days[${index}].caseIds`, `映射的案例不存在：${id}`);
+      validateCaseRules(entry.item, day.day, rules, entry.path);
+      return entry.item;
+    });
+    validateDistribution(dayCases, day.day, `${campaignSource}.days[${index}].caseIds`);
+  }
+  return { campaign, rules, cases };
 }

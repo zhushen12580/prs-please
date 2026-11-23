@@ -5,26 +5,25 @@ import dayTwo from '../data/cases/day-02.json';
 import dayThree from '../data/cases/day-03.json';
 import dayFour from '../data/cases/day-04.json';
 import dayFive from '../data/cases/day-05.json';
-import { parseCampaign, parseRules, validateDay } from './validate';
+import { validateContent } from './validate';
 import type { ReviewCase } from '../game/types';
 
-export const campaign = parseCampaign(rawCampaign);
-export const rules = parseRules(rawRules);
-
-// 登记各日真实内容，并沿用逐日结构校验。
-const loadedDays = new Map<number, ReviewCase[]>([
-  [1, validateDay(dayOne, 1, campaign, rules, 'src/data/cases/day-01.json')],
-  [2, validateDay(dayTwo, 2, campaign, rules, 'src/data/cases/day-02.json')],
-  [3, validateDay(dayThree, 3, campaign, rules, 'src/data/cases/day-03.json')],
-  [4, validateDay(dayFour, 4, campaign, rules, 'src/data/cases/day-04.json')],
-  [5, validateDay(dayFive, 5, campaign, rules, 'src/data/cases/day-05.json')],
+export const { campaign, rules, cases } = validateContent(rawCampaign, rawRules, [
+  { source: 'src/data/cases/day-01.json', data: dayOne },
+  { source: 'src/data/cases/day-02.json', data: dayTwo },
+  { source: 'src/data/cases/day-03.json', data: dayThree },
+  { source: 'src/data/cases/day-04.json', data: dayFour },
+  { source: 'src/data/cases/day-05.json', data: dayFive },
 ]);
 
-export const cases = [...loadedDays.values()].flat();
+const casesById = new Map(cases.map((item) => [item.id, item]));
 
 export function getDayCases(day: number): readonly ReviewCase[] {
-  if (!campaign.days.some((entry) => entry.day === day)) throw new Error(`第 ${day} 天不存在`);
-  const cases = loadedDays.get(day);
-  if (!cases) throw new Error(`第 ${day} 天的案例尚未加载`);
-  return cases;
+  const index = campaign.days.findIndex((entry) => entry.day === day);
+  if (index === -1) throw new Error(`第 ${day} 天不存在`);
+  return campaign.days[index].caseIds.map((id, caseIndex) => {
+    const item = casesById.get(id);
+    if (!item) throw new Error(`src/data/campaign.json.days[${index}].caseIds[${caseIndex}]: 案例不存在`);
+    return item;
+  });
 }
