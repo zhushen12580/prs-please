@@ -1,6 +1,7 @@
 import { summarize, type Statistics } from '../game/score';
 import { workTime } from '../game/state';
 import type { GameContent, GameState } from '../game/types';
+import { downloadScorecard } from '../platform/scorecard';
 import { createReviewLog } from './review-log';
 
 function createStatistics(totals: Statistics, scoreLabel: string): HTMLElement {
@@ -64,9 +65,31 @@ export function createFinalSummary(state: GameState, content: GameContent, navig
   seed.textContent = `挑战种子：${state.seed}`;
   const totals = summarize(state.records, content);
   section.append(title, seed, createStatistics(totals, '总得分'));
+  const actions = document.createElement('div');
+  actions.className = 'shift-actions';
+  const download = document.createElement('button');
+  download.type = 'button';
+  download.className = 'secondary-button';
+  download.textContent = '下载成绩卡';
+  const downloadStatus = document.createElement('p');
+  downloadStatus.setAttribute('role', 'status');
+  downloadStatus.setAttribute('aria-label', '成绩卡下载状态');
+  downloadStatus.hidden = true;
+  download.addEventListener('click', async () => {
+    if (download.disabled) return;
+    download.disabled = true;
+    downloadStatus.hidden = false;
+    downloadStatus.textContent = '正在生成成绩卡…';
+    try {
+      await downloadScorecard({ seed: state.seed, contentVersion: state.contentVersion, statistics: totals });
+      downloadStatus.textContent = '成绩卡已生成，下载已发起。';
+    } catch (error) {
+      downloadStatus.textContent = error instanceof Error ? error.message : '成绩卡生成失败，请重试。';
+    } finally {
+      download.disabled = false;
+    }
+  });
   if (navigation) {
-    const actions = document.createElement('div');
-    actions.className = 'shift-actions';
     const replay = document.createElement('button');
     replay.type = 'button';
     replay.className = 'primary-button';
@@ -78,8 +101,9 @@ export function createFinalSummary(state: GameState, content: GameContent, navig
     home.textContent = '返回首页';
     home.addEventListener('click', navigation.onHome);
     actions.append(replay, home);
-    section.append(actions);
   }
+  actions.append(download);
+  section.append(actions, downloadStatus);
   section.append(createReviewLog(state.records, content));
   return section;
 }
