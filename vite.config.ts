@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: '/prs-please/',
+  base: process.env.PRS_PLEASE_BASE ?? '/prs-please/',
   server: {
     port: 5173,
     strictPort: true,

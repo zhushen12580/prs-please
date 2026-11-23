@@ -1,6 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
-const baseURL = 'http://127.0.0.1:4173/prs-please/';
+const base = process.env.PRS_PLEASE_BASE ?? '/prs-please/';
+const baseURL = new URL(base, 'http://127.0.0.1:4173').href;
 
 export default defineConfig({
   testDir: './tests/e2e',
